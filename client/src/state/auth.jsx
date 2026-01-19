@@ -1,4 +1,4 @@
-import  { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import api from "../lib/api";
 
 const AuthContext = createContext(null);
@@ -7,27 +7,46 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [booting, setBooting] = useState(true);
 
+  // prevents stale responses from overwriting newer state
+  const reqSeq = useRef(0);
+
   async function loadMe() {
+    const mySeq = ++reqSeq.current;
+
     try {
       const token = localStorage.getItem("hl_token");
       if (!token) {
-        setUser(null);
-        return;
+        if (mySeq === reqSeq.current) setUser(null);
+        return null;
       }
+
       const res = await api.get("/auth/me");
-      setUser(res.data.user);
+      if (mySeq === reqSeq.current) setUser(res.data.user);
+      return res.data.user;
     } catch {
-      localStorage.removeItem("hl_token");
-      setUser(null);
+      // only clear token if this request is still the latest one
+      if (mySeq === reqSeq.current) {
+        localStorage.removeItem("hl_token");
+        setUser(null);
+      }
+      return null;
     }
   }
 
   useEffect(() => {
+    let alive = true;
+
     (async () => {
       setBooting(true);
       await loadMe();
-      setBooting(false);
+      if (alive) setBooting(false);
     })();
+
+    return () => {
+      alive = false;
+      // invalidate any in-flight loadMe results
+      reqSeq.current++;
+    };
   }, []);
 
   const value = useMemo(
@@ -35,26 +54,36 @@ export function AuthProvider({ children }) {
       user,
       booting,
       setUser,
+
       async login(email, password) {
         const res = await api.post("/auth/login", { email, password });
         localStorage.setItem("hl_token", res.data.token);
+        // invalidate any in-flight /me and set immediately
+        reqSeq.current++;
         setUser(res.data.user);
         return res.data.user;
       },
+
       async register(name, email, password) {
         const res = await api.post("/auth/register", { name, email, password });
         localStorage.setItem("hl_token", res.data.token);
+        reqSeq.current++;
         setUser(res.data.user);
         return res.data.user;
       },
+
       async logout() {
-        try { await api.post("/auth/logout"); } catch {}
+        try {
+          await api.post("/auth/logout");
+        } catch {}
         localStorage.removeItem("hl_token");
+        reqSeq.current++;
         setUser(null);
       },
+
       async refreshMe() {
-        await loadMe();
-      }
+        return await loadMe();
+      },
     }),
     [user, booting]
   );

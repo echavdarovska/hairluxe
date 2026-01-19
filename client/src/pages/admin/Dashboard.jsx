@@ -86,7 +86,6 @@ export default function AdminDashboard() {
     };
   }, [appointments, today]);
 
-  // ✅ Consistent admin shell already gives width; we just improve layout inside
   return (
     <AdminLayout>
       {/* Header */}
@@ -252,90 +251,120 @@ export default function AdminDashboard() {
           </CardBody>
         </Card>
 
-        {/* Status health */}
-        <Card className="rounded-3xl border border-black/5">
-          <CardBody className="p-6">
-            <div className="text-sm font-semibold text-hlblack">System health</div>
-            <div className="mt-1 text-xs text-black/60">
-              Quick distribution across all appointments.
-            </div>
+<Card className="rounded-3xl border border-black/5">
+  <CardBody className="p-6">
+    <div className="text-sm font-semibold text-hlblack">Workflow mix</div>
+    <div className="mt-1 text-xs text-black/60">
+      Status distribution + items that may block today’s throughput.
+    </div>
 
-            <div className="mt-5 space-y-4">
-              {/* simple progress bars (no charts needed) */}
-              <div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-black/60">Confirmed</span>
-                  <span className="font-semibold text-hlblack">{derived.pct.confirmed}%</span>
-                </div>
-                <div className="mt-1 h-2 w-full rounded-full bg-black/10">
-                  <div
-                    className="h-2 rounded-full bg-hlgreen-600"
-                    style={{ width: `${derived.pct.confirmed}%` }}
-                  />
-                </div>
-              </div>
+    <div className="mt-5 space-y-4">
+      {/* progress bars */}
+      <div>
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-black/60">Confirmed</span>
+          <span className="font-semibold text-hlblack">{derived.pct.confirmed}%</span>
+        </div>
+        <div className="mt-1 h-2 w-full rounded-full bg-black/10">
+          <div
+            className="h-2 rounded-full bg-hlgreen-600"
+            style={{ width: `${derived.pct.confirmed}%` }}
+          />
+        </div>
+      </div>
 
-              <div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-black/60">Pending</span>
-                  <span className="font-semibold text-hlblack">{derived.pct.pending}%</span>
-                </div>
-                <div className="mt-1 h-2 w-full rounded-full bg-black/10">
-                  <div
-                    className="h-2 rounded-full bg-sky-500"
-                    style={{ width: `${derived.pct.pending}%` }}
-                  />
-                </div>
-              </div>
+      <div>
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-black/60">Pending review</span>
+          <span className="font-semibold text-hlblack">{derived.pct.pending}%</span>
+        </div>
+        <div className="mt-1 h-2 w-full rounded-full bg-black/10">
+          <div
+            className="h-2 rounded-full bg-sky-500"
+            style={{ width: `${derived.pct.pending}%` }}
+          />
+        </div>
+      </div>
 
-              <div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-black/60">Proposed</span>
-                  <span className="font-semibold text-hlblack">{derived.pct.proposed}%</span>
-                </div>
-                <div className="mt-1 h-2 w-full rounded-full bg-black/10">
-                  <div
-                    className="h-2 rounded-full bg-amber-500"
-                    style={{ width: `${derived.pct.proposed}%` }}
-                  />
-                </div>
-              </div>
+      <div>
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-black/60">Proposed</span>
+          <span className="font-semibold text-hlblack">{derived.pct.proposed}%</span>
+        </div>
+        <div className="mt-1 h-2 w-full rounded-full bg-black/10">
+          <div
+            className="h-2 rounded-full bg-amber-500"
+            style={{ width: `${derived.pct.proposed}%` }}
+          />
+        </div>
+      </div>
 
-              <div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-black/60">Other</span>
-                  <span className="font-semibold text-hlblack">{derived.pct.other}%</span>
-                </div>
-                <div className="mt-1 h-2 w-full rounded-full bg-black/10">
-                  <div
-                    className="h-2 rounded-full bg-slate-500"
-                    style={{ width: `${derived.pct.other}%` }}
-                  />
-                </div>
-              </div>
+      <div>
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-black/60">Other</span>
+          <span className="font-semibold text-hlblack">{derived.pct.other}%</span>
+        </div>
+        <div className="mt-1 h-2 w-full rounded-full bg-black/10">
+          <div
+            className="h-2 rounded-full bg-slate-500"
+            style={{ width: `${derived.pct.other}%` }}
+          />
+        </div>
+      </div>
 
-              <div className="mt-2 rounded-2xl border border-black/5 bg-cream-100 p-4 text-xs text-black/70">
-                <span className="font-semibold text-hlblack">Focus:</span>{" "}
-                Clear pending first, then proposals. That’s the throughput bottleneck.
-              </div>
+      {/* focus callout */}
+      <div className="rounded-2xl border border-black/5 bg-cream-100 p-4 text-xs text-black/70">
+        <span className="font-semibold text-hlblack">Priority:</span>{" "}
+        Clear <b>pending</b> first, then chase <b>proposals</b>. That’s your conversion funnel.
+      </div>
 
-              <div className="grid gap-2">
-                <Link
-                  to={`/admin/appointments?status=PENDING_ADMIN_REVIEW`}
-                  className="inline-flex items-center justify-between rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-black/70 shadow-sm transition hover:bg-black/5"
-                >
-                  Pending queue <ArrowRight className="h-4 w-4" />
-                </Link>
-                <Link
-                  to={`/admin/appointments?status=PROPOSED_TO_CLIENT`}
-                  className="inline-flex items-center justify-between rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-black/70 shadow-sm transition hover:bg-black/5"
-                >
-                  Proposed queue <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
+      {/* NEW: Needs attention today */}
+      <div className="pt-1">
+        <div className="flex items-center justify-between">
+          <div className="text-sm font-semibold text-hlblack">Needs attention today</div>
+          <Link
+            to={`/admin/appointments?date=${today}`}
+            className="text-xs font-semibold text-hlgreen-700 hover:underline"
+          >
+            Open day view →
+          </Link>
+        </div>
+
+        {loading ? (
+          <div className="mt-3 text-sm text-black/60">Loading...</div>
+        ) : derived.notConfirmedToday.length === 0 ? (
+          <div className="mt-3 rounded-2xl border border-black/5 bg-white p-4 text-xs text-black/60">
+            Everything for today is either confirmed or closed out. Rare W.
+          </div>
+        ) : (
+          <div className="mt-3 space-y-2">
+            {derived.notConfirmedToday.slice(0, 5).map((a) => (
+              <Link
+                key={a._id}
+                to={`/admin/appointments?date=${today}`}
+                className="block rounded-2xl border border-black/5 bg-white p-3 shadow-sm transition hover:bg-black/[0.02]"
+                title="Open day view"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-xs font-extrabold text-hlblack">
+                      {fmtTime(a.startTime)} · {a.serviceId?.name || "Service"}
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-black/60">
+                      {a.staffId?.name ? `Staff: ${a.staffId.name}` : "Staff: —"}
+                    </div>
+                  </div>
+                  <Badge tone={tone(a.status)}>{a.status}</Badge>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  </CardBody>
+</Card>
+
       </div>
     </AdminLayout>
   );
