@@ -12,7 +12,7 @@ export default function Layout({ children }) {
     <div className="min-h-screen bg-cream-100">
       <Header/>
 
-      <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+      <main className="mx-auto max-w-[80vw] px-4 py-8">{children}</main>
 
       <Footer/>
     </div>

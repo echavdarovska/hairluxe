@@ -1,10 +1,12 @@
+// src/pages/Home.jsx
 import Button from "../components/Button";
 import { Link } from "react-router-dom";
+import { Sparkles, CalendarCheck2, Scissors, MapPin, Phone, Mail } from "lucide-react";
 
 function Step({ n, title, desc }) {
   return (
-    <div className="rounded-2xl border border-black/5 bg-white p-6 text-center shadow-sm">
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-cream-100 text-hlgreen-700 font-bold">
+    <div className="rounded-3xl border border-black/5 bg-white/70 p-6 text-center shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-cream-100 text-hlgreen-700 font-extrabold ring-1 ring-black/5">
         {n}
       </div>
       <h3 className="text-base font-semibold text-hlblack">{title}</h3>
@@ -13,231 +15,266 @@ function Step({ n, title, desc }) {
   );
 }
 
-function ServiceCard({ title, desc, price }) {
+function FeatureCard({ icon: Icon, title, desc }) {
   return (
-    <div className="group rounded-2xl border border-black/5 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-      <div className="flex items-start justify-between gap-4">
-        <h3 className="text-lg font-semibold text-hlblack">{title}</h3>
-        {price ? (
-          <span className="rounded-full bg-cream-100 px-3 py-1 text-xs font-semibold text-hlblack">
-            {price}
-          </span>
-        ) : null}
-      </div>
-      <p className="mt-2 text-sm text-black/70">{desc}</p>
+    <div className="group rounded-3xl border border-black/5 bg-white/70 p-6 shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex items-start gap-4">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cream-100 ring-1 ring-black/5">
+          <Icon className="h-5 w-5 text-hlgreen-700" />
+        </div>
 
-      <div className="mt-5">
-        <Link to="/book" className="inline-block">
-          <span className="text-sm font-semibold text-hlgreen-700 group-hover:underline">
-            Book this →
-          </span>
-        </Link>
+        <div className="min-w-0">
+          <h3 className="text-base font-semibold text-hlblack">{title}</h3>
+          <p className="mt-1 text-sm text-black/70">{desc}</p>
+        </div>
+      </div>
+
+      <div className="mt-5 h-px w-full bg-black/5" />
+      <div className="mt-4 text-xs font-semibold text-black/50">
+        Built for clarity • Zero chaos scheduling
       </div>
     </div>
   );
 }
 
-function Feature({ title, desc }) {
+function ServiceCard({ title, desc, price, imageUrl }) {
   return (
-    <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-      <h3 className="text-base font-semibold text-hlblack">{title}</h3>
-      <p className="mt-2 text-sm text-black/70">{desc}</p>
+    <Link
+      to="/book"
+      className="group block overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      title={`Book: ${title}`}
+    >
+      <div className="relative h-44 w-full">
+        <img
+          src={imageUrl}
+          alt={title}
+          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+
+        <div className="absolute bottom-3 left-4 right-4">
+          <div className="flex items-end justify-between gap-3">
+            <h3 className="text-lg font-extrabold text-white drop-shadow-sm">
+              {title}
+            </h3>
+
+            {price ? (
+              <span className="shrink-0 rounded-full bg-white/85 px-3 py-1 text-xs font-semibold text-hlblack ring-1 ring-black/5">
+                {price}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6">
+        <p className="text-sm text-black/70">{desc}</p>
+
+        <div className="mt-5 flex items-center justify-between">
+          <span className="text-sm font-semibold text-hlgreen-700">
+            Book this service →
+          </span>
+
+          <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-semibold text-black/60 ring-1 ring-black/5">
+            Tap card
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function InfoPill({ icon: Icon, label, value }) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-black/10 bg-white/70 px-4 py-3 backdrop-blur">
+      <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-cream-100 ring-1 ring-black/5">
+        <Icon className="h-5 w-5 text-hlgreen-700" />
+      </span>
+      <div className="min-w-0">
+        <div className="text-xs font-semibold uppercase tracking-wide text-black/50">
+          {label}
+        </div>
+        <div className="truncate text-sm font-semibold text-hlblack">{value}</div>
+      </div>
     </div>
   );
 }
 
 export default function Home() {
   return (
-    <div className="mx-auto max-w-7xl px-6 pb-24">
-      {/* HERO / WELCOME */}
-      <section className="relative mt-10 overflow-hidden rounded-3xl bg-gradient-to-br from-cream-100 to-cream-200">
-        <div className="relative z-10 mx-auto max-w-4xl px-10 py-24 text-center">
-          <h1 className="mb-6 text-5xl font-extrabold tracking-tight text-hlblack">
-            Welcome to <span className="text-hlgreen-600">HairLuxe</span>
-          </h1>
-
-          <p className="mx-auto mb-10 max-w-2xl text-lg text-black/70">
-            Book your hair appointment easily. Choose your service, stylist, and
-            time — we’ll take care of the rest.
-          </p>
-
-          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link to="/book">
-              <Button variant="primary" size="lg">
-                Book Appointment
-              </Button>
-            </Link>
-
-            <Link to="/services">
-              <Button variant="secondary" size="lg">
-                View Services
-              </Button>
-            </Link>
-          </div>
-        </div>
-
-        {/* decorative background glow */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(46,125,50,0.12),transparent_60%)]" />
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section className="mt-16">
-        <div className="rounded-3xl border border-black/5 bg-white/60 p-10 backdrop-blur">
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-3xl font-bold text-hlblack">How booking works</h2>
-            <p className="mt-3 text-black/70">
-              In four quick steps, you’ll lock your slot and we’ll handle the rest.
-            </p>
+    <div className="w-full flex justify-center">
+      <div className="w-full px-4 sm:px-6 lg:w-[80vw] lg:max-w-[80vw] lg:min-w-[80vw]">
+        {/* HERO */}
+        <section className="relative mt-10 overflow-hidden rounded-3xl border border-black/5 bg-gradient-to-br from-cream-100 to-cream-200">
+          <div className="absolute inset-0">
+            <img
+              src="https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=2400&q=80"
+              alt="Hair styling"
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-white/65" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(46,125,50,0.16),transparent_60%)]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-white/50" />
           </div>
 
-          <div className="mt-10 grid gap-6 md:grid-cols-4">
-            <Step
-              n="1"
-              title="Pick a service"
-              desc="Haircut, coloring, styling — choose what you need."
-            />
-            <Step
-              n="2"
-              title="Choose a stylist"
-              desc="Select your preferred expert (or go with ‘Any’)."
-            />
-            <Step
-              n="3"
-              title="Select a time"
-              desc="See available slots and pick what works for you."
-            />
-            <Step
-              n="4"
-              title="Confirm booking"
-              desc="Done. You’ll see it in ‘My Appointments’."
-            />
-          </div>
+          <div className="relative z-10 mx-auto max-w-4xl px-6 py-16 text-center sm:px-10 sm:py-20">
+            {/* 3 phrases chips */}
+            <div className="mx-auto inline-flex flex-wrap items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-black/70">
+              <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 backdrop-blur-md ring-1 ring-black/10">
+                <span className="h-2 w-2 rounded-full bg-hlgreen-600" />
+                Premium care
+              </span>
 
-          <div className="mt-10 flex justify-center">
-            <Link to="/book">
-              <Button variant="primary" size="lg">
-                Start Booking
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+              <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 backdrop-blur-md ring-1 ring-black/10">
+                <span className="h-2 w-2 rounded-full bg-hlgreen-600" />
+                Fast booking
+              </span>
 
-      {/* SERVICES PREVIEW */}
-      <section className="mt-20">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-hlblack">Our Signature Services</h2>
-          <p className="mx-auto mt-3 max-w-2xl text-black/70">
-            A curated selection of what clients book the most. Full list is in Services.
-          </p>
-        </div>
+              <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 backdrop-blur-md ring-1 ring-black/10">
+                <span className="h-2 w-2 rounded-full bg-hlgreen-600" />
+                Admin-confirmed times
+              </span>
+            </div>
 
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
-          <ServiceCard
-            title="Classic Haircut"
-            desc="Precision cut with a clean finish, tailored to your face shape."
-            price="from $25"
-          />
-          <ServiceCard
-            title="Color & Tone"
-            desc="Rich color, glossy finish, and a tone that suits your skin tone."
-            price="from $60"
-          />
-          <ServiceCard
-            title="Blowout & Styling"
-            desc="Smooth, volume, and polish for events—or just because."
-            price="from $30"
-          />
-        </div>
+            <h1 className="mt-6 mb-5 text-4xl font-extrabold tracking-tight text-hlblack sm:text-5xl">
+              Welcome to <span className="text-hlgreen-600">HairLuxe</span>
+            </h1>
 
-        <div className="mt-10 flex justify-center">
-          <Link to="/services">
-            <Button variant="secondary" size="lg">
-              Explore All Services
-            </Button>
-          </Link>
-        </div>
-      </section>
-
-      {/* ABOUT / VALUE */}
-      <section className="mt-20">
-        <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
-          <div>
-            <h2 className="text-3xl font-bold text-hlblack">Luxury without the hassle</h2>
-            <p className="mt-4 text-black/70">
-              HairLuxe is built around consistency, comfort, and craft. You book fast,
-              we run on time, and you leave looking expensive.
+            <p className="mx-auto mb-9 max-w-2xl text-base text-black/70 sm:text-lg">
+              Book your hair appointment in seconds. Choose a service and time —
+              we’ll confirm it, or propose the closest available slot.
             </p>
 
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link to="/book">
                 <Button variant="primary" size="lg">
-                  Book Now
+                  Book Appointment
                 </Button>
               </Link>
+
               <Link to="/services">
                 <Button variant="secondary" size="lg">
-                  See Services
+                  View Services
                 </Button>
               </Link>
             </div>
           </div>
+        </section>
 
-          <div className="grid gap-6 sm:grid-cols-2">
-            <Feature
-              title="Expert stylists"
-              desc="Skilled team with modern techniques and real consultation."
+        {/* FEATURE STRIP (3 cards) */}
+        <section className="mt-10">
+          <div className="grid gap-4 md:grid-cols-3">
+            <FeatureCard
+              icon={CalendarCheck2}
+              title="Admin-confirmed schedule"
+              desc="No double booking. If your slot isn’t available, you’ll get a clean proposal."
             />
-            <Feature
-              title="On-time slots"
-              desc="Clear scheduling so your day doesn’t get hijacked."
+            <FeatureCard
+              icon={Scissors}
+              title="Service-first booking"
+              desc="Pick what you want, then we match the best staff and availability."
             />
-            <Feature
-              title="Clean, calm space"
-              desc="Aesthetic, minimal, and comfortable—no chaos."
-            />
-            <Feature
-              title="Easy rebooking"
-              desc="Repeat your favorite service in seconds next time."
+            <FeatureCard
+              icon={Sparkles}
+              title="Clear status tracking"
+              desc="Pending, confirmed, proposed — you always know what’s happening."
             />
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* CONTACT / FOOT CTA */}
-      <section className="mt-20">
-        <div className="rounded-3xl border border-black/5 bg-cream-100 p-10 text-center">
-          <h2 className="text-3xl font-bold text-hlblack">
-            Ready for your next appointment?
-          </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-black/70">
-            Book in under a minute. If you have questions, reach us anytime.
-          </p>
+        {/* HOW IT WORKS (with gradient behind the glass) */}
+        <section className="mt-14">
+          <div className="relative overflow-hidden rounded-3xl border border-black/5 p-0">
+            {/* gradient wash */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-hlgreen-100/45 via-white/30 to-transparent" />
+            {/* soft radial glow */}
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(46,125,50,0.18),transparent_65%)]" />
 
-          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link to="/book">
-              <Button variant="primary" size="lg">
-                Book Appointment
-              </Button>
-            </Link>
-            <Link to="/services">
-              <Button variant="secondary" size="lg">
-                View Services
-              </Button>
-            </Link>
+            {/* content glass layer */}
+            <div className="relative rounded-3xl bg-white/60 p-8 backdrop-blur sm:p-10">
+              <div className="mx-auto max-w-3xl text-center">
+                <h2 className="text-3xl font-bold text-hlblack">How booking works</h2>
+                <p className="mt-3 text-black/70">
+                  You request a slot. Admin confirms — or proposes a better time.
+                </p>
+              </div>
+
+              <div className="mt-10 grid gap-5 md:grid-cols-4">
+                <Step
+                  n="1"
+                  title="Request an appointment"
+                  desc="Pick a service, select a time, and send the request."
+                />
+                <Step
+                  n="2"
+                  title="Wait for admin approval"
+                  desc="Admin reviews availability and confirms or proposes a new time."
+                />
+                <Step
+                  n="3"
+                  title="Accept or book again"
+                  desc="Accept the proposed time, or send a new request."
+                />
+                <Step
+                  n="4"
+                  title="Show up & shine"
+                  desc="Track it in ‘My Appointments’ and arrive on time."
+                />
+              </div>
+
+              <div className="mt-10 flex justify-center">
+                <Link to="/book">
+                  <Button variant="primary" size="lg">
+                    Start Booking
+                  </Button>
+                </Link>
+              </div>
+            </div>
           </div>
+        </section>
 
-          {/* Optional contact line (no backend needed) */}
-          <p className="mt-6 text-sm text-black/60">
-            Contact:{" "}
-            <span className="font-semibold text-hlblack">+389 70 000 000</span>{" "}
-            ·{" "}
-            <span className="font-semibold text-hlblack">
-              hairluxe@example.com
-            </span>
-          </p>
-        </div>
-      </section>
+        {/* FOOT CTA */}
+        <section className="mt-16 mb-10">
+          <div className="relative overflow-hidden rounded-3xl border border-black/5 bg-cream-100 p-8 text-center sm:p-10">
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-hlgreen-100/40" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(46,125,50,0.12),transparent_65%)]" />
+
+            <div className="relative z-10">
+              <h2 className="text-3xl font-bold text-hlblack">
+                Ready for your next appointment?
+              </h2>
+
+              <p className="mx-auto mt-3 max-w-2xl text-black/70">
+                Book in under a minute. If you have questions, reach us anytime.
+              </p>
+
+              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <Link to="/book">
+                  <Button variant="primary" size="lg">
+                    Book Appointment
+                  </Button>
+                </Link>
+                <Link to="/services">
+                  <Button variant="secondary" size="lg">
+                    View Services
+                  </Button>
+                </Link>
+              </div>
+
+              <p className="mt-6 text-sm text-black/60">
+                Contact:{" "}
+                <span className="font-semibold text-hlblack">+389 70 000 000</span>{" "}
+                ·{" "}
+                <span className="font-semibold text-hlblack">
+                  hairluxe@gmail.com
+                </span>
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

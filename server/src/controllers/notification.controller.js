@@ -19,10 +19,12 @@ export async function markRead(req, res, next) {
       { isRead: true },
       { new: true }
     );
+
     if (!n) {
       res.status(404);
       throw new Error("Notification not found");
     }
+
     res.json({ notification: n });
   } catch (e) {
     next(e);
@@ -31,7 +33,11 @@ export async function markRead(req, res, next) {
 
 export async function markAllRead(req, res, next) {
   try {
-    await Notification.updateMany({ userId: req.user._id, isRead: false }, { isRead: true });
+    await Notification.updateMany(
+      { userId: req.user._id, isRead: false },
+      { isRead: true }
+    );
+
     res.json({ ok: true });
   } catch (e) {
     next(e);

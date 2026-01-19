@@ -1,8 +1,104 @@
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import {
+  Bell,
+  CalendarCheck2,
+  Scissors,
+  Sparkles,
+  Menu,
+  X,
+  LayoutDashboard,
+  LogOut,
+  LogIn,
+  UserPlus,
+} from "lucide-react";
+
 import Button from "./Button";
 import { useAuth } from "../state/auth";
 import api from "../lib/api";
+
+const LOGO_SRC = "/logo2.png";
+
+function isUnread(n) {
+  const isReadRaw = n?.isRead ?? n?.is_read;
+  const hasReadAt = !!(n?.readAt ?? n?.read_at);
+
+  if (hasReadAt) return false;
+
+  if (typeof isReadRaw === "boolean") return !isReadRaw;
+  if (typeof isReadRaw === "number") return isReadRaw === 0;
+  if (typeof isReadRaw === "string")
+    return isReadRaw === "0" || isReadRaw.toLowerCase() === "false";
+
+  return true;
+}
+
+function DesktopNavItem({ to, label, icon: Icon, badge, dot }) {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        [
+          "relative inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-hlgreen-300 focus-visible:ring-offset-2",
+          isActive ? "bg-cream-100 text-hlgreen-800" : "text-hlblack hover:bg-black/5 hover:text-hlgreen-700",
+        ].join(" ")
+      }
+    >
+      {Icon ? <Icon className="h-4 w-4" /> : null}
+      <span className="relative">
+        {label}
+        {dot ? (
+          <span className="absolute -right-2 -top-1 inline-flex h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+        ) : null}
+      </span>
+
+      {badge ? (
+        <span className="inline-flex items-center justify-center min-w-5 h-5 rounded-full bg-red-600 px-1.5 text-[11px] font-bold text-white">
+          {badge}
+        </span>
+      ) : null}
+    </NavLink>
+  );
+}
+
+function MobileNavItem({ to, label, icon: Icon, onClick, badge, dot }) {
+  return (
+    <NavLink
+      to={to}
+      onClick={onClick}
+      className={({ isActive }) =>
+        [
+          "flex items-center justify-between rounded-2xl px-4 py-3 text-sm font-semibold transition",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-hlgreen-300 focus-visible:ring-offset-2",
+          isActive ? "bg-cream-100 text-hlgreen-800" : "text-hlblack hover:bg-black/5",
+        ].join(" ")
+      }
+    >
+      <span className="inline-flex items-center gap-3">
+        {Icon ? (
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-black/5">
+            <Icon className="h-5 w-5 text-hlgreen-700" />
+          </span>
+        ) : null}
+        <span className="relative">
+          {label}
+          {dot ? (
+            <span className="absolute -right-2 -top-1 inline-flex h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+          ) : null}
+        </span>
+      </span>
+
+      {badge ? (
+        <span className="inline-flex items-center justify-center min-w-6 h-6 rounded-full bg-red-600 px-2 text-[12px] font-extrabold text-white">
+          {badge}
+        </span>
+      ) : (
+        <span className="text-black/30">→</span>
+      )}
+    </NavLink>
+  );
+}
 
 export default function Header() {
   const { user, logout } = useAuth();
@@ -12,11 +108,9 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
 
-  // Close mobile menu on navigation
   useEffect(() => setOpen(false), [location.pathname]);
 
-  // Load unread notifications count when logged in
-  useEffect(() => {
+  const fetchUnread = useCallback(() => {
     if (!user) {
       setUnreadCount(0);
       return;
@@ -25,93 +119,101 @@ export default function Header() {
     api
       .get("/notifications")
       .then((res) => {
-        const list = Array.isArray(res.data) ? res.data : res.data?.items ?? [];
-        setUnreadCount(list.filter((n) => !n.isRead).length);
+        const list = Array.isArray(res.data)
+          ? res.data
+          : res.data?.notifications ?? res.data?.items ?? [];
+        setUnreadCount(list.filter(isUnread).length);
       })
       .catch(() => setUnreadCount(0));
   }, [user]);
 
-  // Container width strategy:
-  // - Mobile: full width (best UX)
-  // - md+: exact 80vw (matches your admin shell)
+  useEffect(() => {
+    fetchUnread();
+  }, [fetchUnread]);
+
+  useEffect(() => {
+    const onUpdated = () => fetchUnread();
+    window.addEventListener("notifications:updated", onUpdated);
+    return () => window.removeEventListener("notifications:updated", onUpdated);
+  }, [fetchUnread]);
+
+  const hasUnread = unreadCount > 0;
+  const badgeText = unreadCount > 99 ? "99+" : String(unreadCount);
+
+  // ✅ Consistent 80vw shell (same as Services/Book)
   const containerClass =
     "mx-auto w-full px-4 sm:px-6 md:w-[80vw] md:max-w-[80vw] md:min-w-[80vw]";
-
-  const headerItemClass = ({ isActive }) =>
-    `relative inline-flex items-center px-2 py-1 text-sm font-medium transition
-     focus:outline-none focus-visible:ring-2 focus-visible:ring-hlgreen-300 focus-visible:ring-offset-2
-     ${
-       isActive
-         ? "text-hlgreen-700 after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-full after:bg-hlgreen-600"
-         : "text-hlblack hover:text-hlgreen-600"
-     }`;
-
-  const mobileItemClass = ({ isActive }) =>
-    `rounded-lg px-3 py-2 text-sm font-medium transition
-     focus:outline-none focus-visible:ring-2 focus-visible:ring-hlgreen-300 focus-visible:ring-offset-2
-     ${isActive ? "bg-hlgreen-50 text-hlgreen-800" : "text-hlblack hover:bg-black/5"}`;
 
   const authLinks = useMemo(() => {
     if (!user) {
       return {
         desktop: (
-          <>
+          <div className="flex items-center gap-2">
             <Link to="/login">
-              <Button variant="soft" size="sm" className="rounded-md">
-                Login
+              <Button variant="soft" size="sm" className="rounded-xl">
+                <span className="inline-flex items-center gap-2">
+                  <LogIn className="h-4 w-4" /> Login
+                </span>
               </Button>
             </Link>
             <Link to="/register">
-              <Button variant="primary" size="sm" className="rounded-md">
-                Register
+              <Button variant="primary" size="sm" className="rounded-xl">
+                <span className="inline-flex items-center gap-2">
+                  <UserPlus className="h-4 w-4" /> Register
+                </span>
               </Button>
             </Link>
-          </>
+          </div>
         ),
         mobile: (
-          <>
+          <div className="grid gap-2 pt-2">
             <Link to="/login" onClick={() => setOpen(false)}>
-              <Button variant="soft" size="md" className="w-full rounded-md justify-center">
-                Login
+              <Button variant="soft" size="md" className="w-full rounded-2xl justify-center">
+                <span className="inline-flex items-center gap-2">
+                  <LogIn className="h-5 w-5" /> Login
+                </span>
               </Button>
             </Link>
             <Link to="/register" onClick={() => setOpen(false)}>
-              <Button variant="primary" size="md" className="w-full rounded-md justify-center">
-                Register
+              <Button variant="primary" size="md" className="w-full rounded-2xl justify-center">
+                <span className="inline-flex items-center gap-2">
+                  <UserPlus className="h-5 w-5" /> Register
+                </span>
               </Button>
             </Link>
-          </>
+          </div>
         ),
       };
     }
 
     return {
       desktop: (
-        <>
+        <div className="flex items-center gap-2">
           {isAdmin && (
             <Link to="/admin" title="Admin Dashboard">
-              <Button variant="chip" size="sm" className="rounded-md">
-                Dashboard
+              <Button variant="chip" size="sm" className="rounded-xl">
+                <span className="inline-flex items-center gap-2">
+                  <LayoutDashboard className="h-4 w-4" /> Dashboard
+                </span>
               </Button>
             </Link>
           )}
 
-          <Button
-            variant="soft"
-            size="sm"
-            className="rounded-md"
-            onClick={logout}
-          >
-            Logout
+          <Button variant="soft" size="sm" className="rounded-xl" onClick={logout}>
+            <span className="inline-flex items-center gap-2">
+              <LogOut className="h-4 w-4" /> Logout
+            </span>
           </Button>
-        </>
+        </div>
       ),
       mobile: (
-        <>
+        <div className="grid gap-2 pt-2">
           {isAdmin && (
             <Link to="/admin" onClick={() => setOpen(false)}>
-              <Button variant="chip" size="md" className="w-full rounded-md justify-center">
-                Dashboard
+              <Button variant="chip" size="md" className="w-full rounded-2xl justify-center">
+                <span className="inline-flex items-center gap-2">
+                  <LayoutDashboard className="h-5 w-5" /> Dashboard
+                </span>
               </Button>
             </Link>
           )}
@@ -119,116 +221,133 @@ export default function Header() {
           <Button
             variant="soft"
             size="md"
-            className="w-full rounded-md justify-center"
+            className="w-full rounded-2xl justify-center"
             onClick={() => {
               setOpen(false);
               logout();
             }}
           >
-            Logout
+            <span className="inline-flex items-center gap-2">
+              <LogOut className="h-5 w-5" /> Logout
+            </span>
           </Button>
-        </>
+        </div>
       ),
     };
   }, [user, isAdmin, logout]);
 
   return (
-    <header className="border-b bg-white w-full">
+    <header className="sticky top-0 z-40 w-full border-b border-black/5 bg-white/85 backdrop-blur">
       {/* Top bar */}
-      <div className={`${containerClass} flex items-center justify-between py-4`}>
-        {/* Logo */}
-        <Link to="/" className="text-xl font-semibold text-hlblack">
-          Hair<span className="text-hlgreen-600">Luxe</span>
-        </Link>
+      <div className={`${containerClass} flex items-center justify-between py-3`}>
+        {/* Brand */}
+  
 
-        {/* Desktop navigation */}
-        <nav className="hidden md:flex items-center gap-3">
-          {/* Public-ish links: show only when logged in (your app requires auth for book/appointments anyway) */}
-          {user && (
+<Link to="/" className="inline-flex items-center gap-3">
+  {/* Bigger logo, no container, no border */}
+  <img
+    src={LOGO_SRC}
+    alt="HairLuxe"
+    className="h-14 w-14 object-contain"
+    loading="lazy"
+    onError={(e) => {
+      e.currentTarget.style.display = "none";
+    }}
+  />
+
+  {/* Softer typography (not extra bold) */}
+  <div className="leading-tight">
+    <div className="flex items-baseline gap-1">
+      <span className="text-[28px] sm:text-[30px] font-semibold tracking-tight text-hlblack leading-none">
+        Hair
+      </span>
+      <span className="text-[28px] sm:text-[30px] font-semibold tracking-tight text-hlgreen-600 leading-none">
+        Luxe
+      </span>
+    </div>
+
+    <div className="mt-0.5 text-[11px] font-medium text-black/50">
+      Book • Confirm • Glow
+    </div>
+  </div>
+</Link>
+
+
+        {/* Desktop nav */}
+        <nav className="hidden md:flex items-center gap-2">
+          {user ? (
             <>
-              <NavLink to="/services" className={headerItemClass}>
-                Services
-              </NavLink>
-              <NavLink to="/book" className={headerItemClass}>
-                Book
-              </NavLink>
-              <NavLink to="/appointments" className={headerItemClass}>
-                My Appointments
-              </NavLink>
-
-              <NavLink to="/notifications" className={headerItemClass} title="Notifications">
-                <span className="inline-flex items-center gap-2">
-                  Notifications
-                  {unreadCount > 0 ? (
-                    <span className="inline-flex items-center justify-center min-w-5 h-5 rounded-full bg-red-600 px-1.5 text-[11px] font-bold text-white">
-                      {unreadCount > 99 ? "99+" : unreadCount}
-                    </span>
-                  ) : null}
-                </span>
-              </NavLink>
+              <DesktopNavItem to="/services" label="Services" icon={Scissors} />
+              <DesktopNavItem to="/book" label="Book" icon={Sparkles} />
+              <DesktopNavItem to="/appointments" label="My Appointments" icon={CalendarCheck2} />
+              <DesktopNavItem
+                to="/notifications"
+                label="Notifications"
+                icon={Bell}
+                dot={hasUnread}
+                badge={hasUnread ? badgeText : null}
+              />
             </>
-          )}
+          ) : null}
 
-          {/* Auth-dependent actions */}
-          {authLinks.desktop}
+          <div className="ml-2">{authLinks.desktop}</div>
         </nav>
 
         {/* Mobile controls */}
         <div className="flex items-center gap-2 md:hidden">
-          {/* Notifications icon only when logged in */}
-          {user && (
+          {user ? (
             <Link
               to="/notifications"
-              className="relative rounded-md px-2 py-2"
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-black/10 bg-white shadow-sm"
               title="Notifications"
               onClick={() => setOpen(false)}
             >
-              <span className="text-sm text-hlblack">🔔</span>
-              {unreadCount > 0 && (
-                <span className="absolute right-1 top-1 inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
-              )}
+              <Bell className="h-5 w-5 text-hlblack" />
+              {hasUnread ? (
+                <span className="absolute -right-0.5 -top-0.5 inline-flex h-3 w-3 rounded-full bg-red-500 ring-2 ring-white" />
+              ) : null}
             </Link>
-          )}
+          ) : null}
 
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="rounded-md border px-3 py-2 text-sm font-semibold text-hlblack"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-3 text-sm font-extrabold text-hlblack shadow-sm"
             aria-label="Toggle menu"
             aria-expanded={open}
           >
-            {open ? "Close" : "Menu"}
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            <span className="hidden xs:inline">{open ? "Close" : "Menu"}</span>
           </button>
         </div>
       </div>
 
       {/* Mobile menu */}
       {open ? (
-        <div className="md:hidden border-t bg-white">
-          <div className={`${containerClass} py-3 flex flex-col gap-2`}>
+        <div className="md:hidden border-t border-black/5 bg-white">
+          <div className={`${containerClass} py-4`}>
             {user ? (
               <>
-                <NavLink to="/services" onClick={() => setOpen(false)} className={mobileItemClass}>
-                  Services
-                </NavLink>
-                <NavLink to="/book" onClick={() => setOpen(false)} className={mobileItemClass}>
-                  Book
-                </NavLink>
-                <NavLink to="/appointments" onClick={() => setOpen(false)} className={mobileItemClass}>
-                  My Appointments
-                </NavLink>
-                <NavLink to="/notifications" onClick={() => setOpen(false)} className={mobileItemClass}>
-                  <span className="inline-flex items-center justify-between w-full">
-                    Notifications
-                    {unreadCount > 0 ? (
-                      <span className="inline-flex items-center justify-center min-w-5 h-5 rounded-full bg-red-600 px-1.5 text-[11px] font-bold text-white">
-                        {unreadCount > 99 ? "99+" : unreadCount}
-                      </span>
-                    ) : null}
-                  </span>
-                </NavLink>
+                <div className="grid gap-2">
+                  <MobileNavItem to="/services" label="Services" icon={Scissors} onClick={() => setOpen(false)} />
+                  <MobileNavItem to="/book" label="Book" icon={Sparkles} onClick={() => setOpen(false)} />
+                  <MobileNavItem
+                    to="/appointments"
+                    label="My Appointments"
+                    icon={CalendarCheck2}
+                    onClick={() => setOpen(false)}
+                  />
+                  <MobileNavItem
+                    to="/notifications"
+                    label="Notifications"
+                    icon={Bell}
+                    onClick={() => setOpen(false)}
+                    dot={hasUnread}
+                    badge={hasUnread ? badgeText : null}
+                  />
+                </div>
 
-                <div className="pt-2">{authLinks.mobile}</div>
+                {authLinks.mobile}
               </>
             ) : (
               authLinks.mobile

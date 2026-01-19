@@ -6,9 +6,11 @@ import {
   Power,
   Save,
   X,
-  CheckCircle2,
-  XCircle,
+  Search,
+  Users,
+  UserPlus2,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import api from "../../lib/api";
 import AdminLayout from "../../components/AdminLayout";
@@ -17,6 +19,7 @@ import Button from "../../components/Button";
 import InputField from "../../components/InputField";
 import Select from "../../components/Select";
 import { Card, CardBody } from "../../components/Card";
+import PageHeader from "../../components/PageHeader";
 
 export default function StaffAdmin() {
   const [staff, setStaff] = useState([]);
@@ -26,17 +29,14 @@ export default function StaffAdmin() {
   const [saving, setSaving] = useState(false);
   const [svcQ, setSvcQ] = useState("");
 
-  // expand/collapse per staff card (to show full specialty names)
   const [expandedStaff, setExpandedStaff] = useState(() => new Set());
 
-  // CREATE FORM
   const [form, setForm] = useState({
     name: "",
     active: "true",
     specialties: [],
   });
 
-  // EDIT MODE
   const [editingId, setEditingId] = useState(null);
   const [savingEdit, setSavingEdit] = useState(false);
   const [editSvcQ, setEditSvcQ] = useState("");
@@ -48,10 +48,7 @@ export default function StaffAdmin() {
 
   async function load() {
     try {
-      const [stRes, sRes] = await Promise.all([
-        api.get("/staff"),
-        api.get("/services"),
-      ]);
+      const [stRes, sRes] = await Promise.all([api.get("/staff"), api.get("/services")]);
       setStaff(stRes.data.staff || []);
       setServices(sRes.data.services || []);
     } catch {
@@ -72,47 +69,42 @@ export default function StaffAdmin() {
     return map;
   }, [services]);
 
+  const metrics = useMemo(() => {
+    const total = staff.length;
+    const active = staff.filter((s) => s.active).length;
+    const disabled = total - active;
+    return { total, active, disabled };
+  }, [staff]);
+
   const filteredStaff = useMemo(() => {
     const qq = q.trim().toLowerCase();
     if (!qq) return staff;
-    return staff.filter((s) =>
-      String(s.name || "").toLowerCase().includes(qq)
-    );
+    return staff.filter((s) => String(s.name || "").toLowerCase().includes(qq));
   }, [staff, q]);
 
-  // Only active services are selectable specialties
-  const selectableServices = useMemo(() => {
-    return services.filter((s) => s.active !== false);
-  }, [services]);
+  const selectableServices = useMemo(() => services.filter((s) => s.active !== false), [services]);
 
   const filteredServices = useMemo(() => {
     const qq = svcQ.trim().toLowerCase();
     if (!qq) return selectableServices;
-    return selectableServices.filter((s) => {
-      const sp = serviceSpecialty(s);
-      return `${s.name} ${sp}`.toLowerCase().includes(qq);
-    });
+    return selectableServices.filter((s) =>
+      `${s.name} ${serviceSpecialty(s)}`.toLowerCase().includes(qq)
+    );
   }, [selectableServices, svcQ]);
 
   const filteredEditServices = useMemo(() => {
     const qq = editSvcQ.trim().toLowerCase();
     if (!qq) return selectableServices;
-    return selectableServices.filter((s) => {
-      const sp = serviceSpecialty(s);
-      return `${s.name} ${sp}`.toLowerCase().includes(qq);
-    });
+    return selectableServices.filter((s) =>
+      `${s.name} ${serviceSpecialty(s)}`.toLowerCase().includes(qq)
+    );
   }, [selectableServices, editSvcQ]);
 
   const toggleSpecialty = (serviceId) => {
     const id = String(serviceId);
     setForm((p) => {
       const has = p.specialties.includes(id);
-      return {
-        ...p,
-        specialties: has
-          ? p.specialties.filter((x) => x !== id)
-          : [...p.specialties, id],
-      };
+      return { ...p, specialties: has ? p.specialties.filter((x) => x !== id) : [...p.specialties, id] };
     });
   };
 
@@ -120,24 +112,14 @@ export default function StaffAdmin() {
     const id = String(serviceId);
     setEditForm((p) => {
       const has = p.specialties.includes(id);
-      return {
-        ...p,
-        specialties: has
-          ? p.specialties.filter((x) => x !== id)
-          : [...p.specialties, id],
-      };
+      return { ...p, specialties: has ? p.specialties.filter((x) => x !== id) : [...p.specialties, id] };
     });
   };
 
   function normalizeSpecialties(input) {
     const list = Array.isArray(input) ? input : [];
-    // accept populated objects or id strings
     return list
-      .map((x) => {
-        if (!x) return null;
-        if (typeof x === "object") return String(x._id || "");
-        return String(x);
-      })
+      .map((x) => (typeof x === "object" ? String(x?._id || "") : String(x || "")))
       .filter(Boolean);
   }
 
@@ -154,10 +136,7 @@ export default function StaffAdmin() {
       specialties,
     };
 
-    if (!payload.name) {
-      toast.error("Name is required");
-      return;
-    }
+    if (!payload.name) return toast.error("Name is required");
 
     try {
       setSaving(true);
@@ -171,9 +150,7 @@ export default function StaffAdmin() {
       const data = e2?.response?.data;
       const msg =
         data?.message ||
-        (Array.isArray(data?.issues)
-          ? data.issues.map((i) => i.message).join(", ")
-          : null) ||
+        (Array.isArray(data?.issues) ? data.issues.map((i) => i.message).join(", ") : null) ||
         (Array.isArray(data?.errors) ? data.errors.join(", ") : null) ||
         e2?.message ||
         "Failed";
@@ -189,9 +166,7 @@ export default function StaffAdmin() {
     try {
       await api.put(`/staff/${s._id}`, { active: !s.active });
       await load();
-      if (editingId === String(s._id)) {
-        setEditForm((p) => ({ ...p, active: String(!s.active) }));
-      }
+      if (editingId === String(s._id)) setEditForm((p) => ({ ...p, active: String(!s.active) }));
     } catch {
       toast.error("Failed");
     }
@@ -236,10 +211,7 @@ export default function StaffAdmin() {
       specialties,
     };
 
-    if (!payload.name) {
-      toast.error("Name is required");
-      return;
-    }
+    if (!payload.name) return toast.error("Name is required");
 
     try {
       setSavingEdit(true);
@@ -254,14 +226,13 @@ export default function StaffAdmin() {
     }
   }
 
-  // Convert specialties to pretty chips (handles ids or populated objects)
+  // chips: ids or populated objects
   const staffSpecialties = (st) => {
     const list = Array.isArray(st.specialties) ? st.specialties : [];
     return list
       .map((x) => {
         if (!x) return null;
 
-        // populated object
         if (typeof x === "object") {
           const name = x.name;
           const sp = serviceSpecialty(x);
@@ -269,33 +240,21 @@ export default function StaffAdmin() {
           return { key: String(x._id || name), name, specialty: sp };
         }
 
-        // id string
         const svc = serviceById.get(String(x));
         if (!svc) return null;
-        return {
-          key: String(svc._id),
-          name: svc.name,
-          specialty: serviceSpecialty(svc),
-        };
+        return { key: String(svc._id), name: svc.name, specialty: serviceSpecialty(svc) };
       })
       .filter(Boolean);
   };
 
-  // little tone system so chips look nicer than plain grey blobs
   const toneFor = (specialty) => {
     const s = String(specialty || "").toLowerCase();
-    if (s.includes("color"))
-      return "bg-amber-50 text-amber-800 border-amber-200";
-    if (s.includes("haircut") || s.includes("cut"))
-      return "bg-emerald-50 text-emerald-800 border-emerald-200";
-    if (s.includes("curl"))
-      return "bg-violet-50 text-violet-800 border-violet-200";
-    if (s.includes("extension"))
-      return "bg-sky-50 text-sky-800 border-sky-200";
-    if (s.includes("treat"))
-      return "bg-teal-50 text-teal-800 border-teal-200";
-    if (s.includes("styl"))
-      return "bg-rose-50 text-rose-800 border-rose-200";
+    if (s.includes("color")) return "bg-amber-50 text-amber-800 border-amber-200";
+    if (s.includes("haircut") || s.includes("cut")) return "bg-emerald-50 text-emerald-800 border-emerald-200";
+    if (s.includes("curl")) return "bg-violet-50 text-violet-800 border-violet-200";
+    if (s.includes("extension")) return "bg-sky-50 text-sky-800 border-sky-200";
+    if (s.includes("treat")) return "bg-teal-50 text-teal-800 border-teal-200";
+    if (s.includes("styl")) return "bg-rose-50 text-rose-800 border-rose-200";
     return "bg-slate-50 text-slate-800 border-slate-200";
   };
 
@@ -310,18 +269,87 @@ export default function StaffAdmin() {
 
   const chipText = (c) => `${c.name} • ${c.specialty}`;
 
+  const headerActions = (
+    <div className="flex flex-wrap items-center gap-2">
+      <Link to="/admin/services" title="Services drive Staff specialties">
+        <Button variant="outline" size="sm" className="rounded-xl">
+          Services
+        </Button>
+      </Link>
+    
+    </div>
+  );
+
   return (
     <AdminLayout>
-      <h2 className="text-2xl font-bold text-hlblack">Staff</h2>
-      <p className="mt-1 text-sm text-black/60">Create and manage staff.</p>
+      {/* ✅ Use your reusable header component */}
+      <PageHeader
+        title="Staff"
+        subtitle="Create and manage team members and their specialties."
+        actions={headerActions}
+      />
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
-        {/* CREATE STAFF */}
-        <Card>
+      {/* KPI strip (ties into dashboard + makes the page feel “admin-y”) */}
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <Card className="rounded-3xl">
           <CardBody>
-            <div className="text-sm font-semibold">Create staff</div>
+            <div className="text-xs font-semibold text-black/50">Total</div>
+            <div className="mt-2 flex items-center justify-between">
+              <div className="text-3xl font-extrabold text-hlblack">{metrics.total}</div>
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-cream-100 ring-1 ring-black/5">
+                <Users className="h-5 w-5 text-hlgreen-700" />
+              </span>
+            </div>
+          </CardBody>
+        </Card>
 
-            <form className="mt-4 space-y-3" onSubmit={create}>
+        <Card className="rounded-3xl">
+          <CardBody>
+            <div className="text-xs font-semibold text-black/50">Active</div>
+            <div className="mt-2 flex items-center justify-between">
+              <div className="text-3xl font-extrabold text-hlblack">{metrics.active}</div>
+              <span className="inline-flex items-center rounded-full bg-hlgreen-600/10 px-3 py-1 text-xs font-semibold text-hlgreen-700 ring-1 ring-hlgreen-600/15">
+                Enabled
+              </span>
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card className="rounded-3xl">
+          <CardBody>
+            <div className="text-xs font-semibold text-black/50">Disabled</div>
+            <div className="mt-2 flex items-center justify-between">
+              <div className="text-3xl font-extrabold text-hlblack">{metrics.disabled}</div>
+              <span className="inline-flex items-center rounded-full bg-black/5 px-3 py-1 text-xs font-semibold text-black/60 ring-1 ring-black/10">
+                Off
+              </span>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+
+      {/* Responsive layout:
+          - xl: create stays narrower; list takes rest
+          - mobile: stacks
+      */}
+      <div className="mt-6 grid gap-5 xl:grid-cols-[440px_1fr]">
+        {/* CREATE STAFF */}
+        <Card className="rounded-3xl">
+          <CardBody>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold text-hlblack">Create staff</div>
+                <div className="mt-1 text-xs text-black/60">
+                  Assign specialties (active services only).
+                </div>
+              </div>
+
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-cream-100 ring-1 ring-black/5">
+                <UserPlus2 className="h-5 w-5 text-hlgreen-700" />
+              </span>
+            </div>
+
+            <form className="mt-5 space-y-3" onSubmit={create}>
               <InputField
                 label="Name"
                 value={form.name}
@@ -339,26 +367,29 @@ export default function StaffAdmin() {
               </Select>
 
               {/* Specialties picker */}
-              <div className="rounded-2xl border border-black/10 bg-white p-3">
-                <div className="flex items-end justify-between gap-3">
+              <div className="rounded-3xl border border-black/10 bg-white p-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <div className="text-sm font-semibold text-hlblack">
-                      Specialties
-                    </div>
+                    <div className="text-sm font-semibold text-hlblack">Specialties</div>
                     <div className="text-xs text-black/60">
                       Pick which services this staff member can perform.
                     </div>
                   </div>
 
-                  <InputField
-                    className="max-w-[220px]"
-                    placeholder="Search services..."
-                    value={svcQ}
-                    onChange={(e) => setSvcQ(e.target.value)}
-                  />
+                  <div className="w-full sm:w-[220px]">
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-black/40" />
+                      <input
+                        value={svcQ}
+                        onChange={(e) => setSvcQ(e.target.value)}
+                        placeholder="Search services..."
+                        className="w-full rounded-2xl border border-black/10 bg-white px-9 py-2 text-sm outline-none shadow-sm focus:ring-2 focus:ring-hlgreen-600/30"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="mt-3 max-h-[260px] overflow-auto pr-1 space-y-2">
+                <div className="mt-3 max-h-[280px] overflow-auto pr-1 space-y-2">
                   {filteredServices.map((s) => {
                     const id = String(s._id);
                     const checked = form.specialties.includes(id);
@@ -366,15 +397,12 @@ export default function StaffAdmin() {
                     return (
                       <label
                         key={id}
-                        className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-black/10 bg-cream-50 px-3 py-2 hover:bg-cream-100"
+                        className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-black/10 bg-cream-50 px-3 py-2 hover:bg-cream-100 transition"
                       >
                         <div className="min-w-0">
-                          <div className="text-sm font-semibold text-hlblack truncate">
-                            {s.name}
-                          </div>
+                          <div className="text-sm font-semibold text-hlblack truncate">{s.name}</div>
                           <div className="text-xs text-black/60">
-                            {serviceSpecialty(s)} • {s.durationMinutes} min •{" "}
-                            {s.price} €
+                            {serviceSpecialty(s)} • {s.durationMinutes} min • {s.price} €
                           </div>
                         </div>
 
@@ -389,9 +417,7 @@ export default function StaffAdmin() {
                   })}
 
                   {filteredServices.length === 0 ? (
-                    <div className="text-sm text-black/60">
-                      No services found.
-                    </div>
+                    <div className="text-sm text-black/60">No services found.</div>
                   ) : null}
                 </div>
 
@@ -433,29 +459,36 @@ export default function StaffAdmin() {
                 Create
               </Button>
             </form>
+
+
           </CardBody>
         </Card>
 
         {/* ALL STAFF */}
-        <Card>
+        <Card className="rounded-3xl">
           <CardBody>
-            <div className="flex items-end justify-between gap-2">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <div className="text-sm font-semibold">All staff</div>
+                <div className="text-sm font-semibold text-hlblack">All staff</div>
                 <div className="mt-0.5 text-xs text-black/50">
-                  {filteredStaff.length} total
+                  Showing {filteredStaff.length} of {staff.length}
                 </div>
               </div>
 
-              <InputField
-                className="max-w-[240px]"
-                placeholder="Search staff..."
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-              />
+              <div className="w-full sm:w-[260px]">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-black/40" />
+                  <input
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Search staff..."
+                    className="w-full rounded-2xl border border-black/10 bg-white px-9 py-2.5 text-sm outline-none shadow-sm focus:ring-2 focus:ring-hlgreen-600/30"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="mt-4 space-y-3 max-h-[560px] overflow-auto pr-1">
+            <div className="mt-4 space-y-3 max-h-[640px] overflow-auto pr-1">
               {filteredStaff.map((s) => {
                 const id = String(s._id);
                 const chips = staffSpecialties(s);
@@ -468,38 +501,34 @@ export default function StaffAdmin() {
                 return (
                   <div
                     key={id}
-                    className={`rounded-2xl border bg-white p-3 shadow-sm ${
+                    className={[
+                      "rounded-3xl border p-4 shadow-sm transition",
                       isEditing
-                        ? "border-hlgreen-600/30 ring-2 ring-hlgreen-600/10"
-                        : "border-black/10"
-                    }`}
+                        ? "border-hlgreen-600/30 bg-hlgreen-600/5 ring-2 ring-hlgreen-600/10"
+                        : "border-black/10 bg-white hover:bg-cream-50",
+                    ].join(" ")}
                   >
-                    {/* Header row */}
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <div className="font-semibold text-hlblack truncate">{s.name}</div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="truncate text-base font-semibold text-hlblack">{s.name}</div>
 
-                          {s.active ? (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">
-                  
-                              Active
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
-                            
-                              Disabled
-                            </span>
-                          )}
+                          <span
+                            className={[
+                              "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1",
+                              s.active
+                                ? "bg-hlgreen-600/10 text-hlgreen-700 ring-hlgreen-600/15"
+                                : "bg-black/5 text-black/60 ring-black/10",
+                            ].join(" ")}
+                          >
+                            {s.active ? "Active" : "Disabled"}
+                          </span>
 
                           {chips.length ? (
-                            <span className="text-[11px] text-black/50">
-                              • {chips.length} specialties
-                            </span>
+                            <span className="text-[11px] text-black/50">• {chips.length} specialties</span>
                           ) : null}
                         </div>
 
-                        {/* chips (read mode) */}
                         {!isEditing ? (
                           <div className="mt-2">
                             {chips.length ? (
@@ -523,7 +552,6 @@ export default function StaffAdmin() {
                                     type="button"
                                     onClick={() => toggleExpandStaff(id)}
                                     className="inline-flex items-center rounded-full border border-black/10 bg-black/5 px-2 py-1 text-[11px] text-black/70 hover:bg-black/10"
-                                    title="Show all specialties"
                                   >
                                     +{extra} more
                                   </button>
@@ -532,27 +560,23 @@ export default function StaffAdmin() {
                                     type="button"
                                     onClick={() => toggleExpandStaff(id)}
                                     className="inline-flex items-center rounded-full border border-black/10 bg-black/5 px-2 py-1 text-[11px] text-black/70 hover:bg-black/10"
-                                    title="Collapse"
                                   >
                                     Show less
                                   </button>
                                 ) : null}
                               </div>
                             ) : (
-                              <div className="text-xs text-black/50">
-                                No specialties assigned.
-                              </div>
+                              <div className="text-xs text-black/50">No specialties assigned.</div>
                             )}
                           </div>
                         ) : null}
                       </div>
 
-                      {/* Actions row (horizontal) */}
                       {!isEditing ? (
                         <div className="flex flex-wrap items-center justify-end gap-2">
                           <Button size="sm" variant="outline" onClick={() => startEdit(s)} className="gap-2">
                             <Pencil className="h-4 w-4" />
-                           
+                            <span className="hidden sm:inline">Edit</span>
                           </Button>
 
                           <Button size="sm" variant="outline" onClick={() => toggleActive(s)} className="gap-2">
@@ -562,7 +586,7 @@ export default function StaffAdmin() {
 
                           <Button size="sm" variant="danger" onClick={() => del(id)} className="gap-2">
                             <Trash2 className="h-4 w-4" />
-                           
+                            <span className="hidden sm:inline">Delete</span>
                           </Button>
                         </div>
                       ) : (
@@ -577,63 +601,55 @@ export default function StaffAdmin() {
                             <Save className="h-4 w-4" />
                             Save
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={cancelEdit}
-                            disabled={savingEdit}
-                            className="gap-2"
-                          >
+
+                          <Button size="sm" variant="outline" onClick={cancelEdit} disabled={savingEdit} className="gap-2">
                             <X className="h-4 w-4" />
-                           
+                            Cancel
                           </Button>
                         </div>
                       )}
                     </div>
 
-                    {/* Edit panel */}
                     {isEditing ? (
-                      <div className="mt-4 rounded-2xl border border-black/10 bg-cream-50 p-3">
+                      <div className="mt-4 rounded-3xl border border-black/10 bg-white p-4">
                         <div className="grid gap-3 sm:grid-cols-2">
                           <InputField
                             label="Name"
                             value={editForm.name}
-                            onChange={(e) =>
-                              setEditForm((p) => ({ ...p, name: e.target.value }))
-                            }
+                            onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
                             required
                           />
 
                           <Select
                             label="Status"
                             value={editForm.active}
-                            onChange={(e) =>
-                              setEditForm((p) => ({ ...p, active: e.target.value }))
-                            }
+                            onChange={(e) => setEditForm((p) => ({ ...p, active: e.target.value }))}
                           >
                             <option value="true">Active</option>
                             <option value="false">Disabled</option>
                           </Select>
                         </div>
 
-                        {/* Specialties editor */}
-                        <div className="mt-3 rounded-2xl border border-black/10 bg-white p-3">
-                          <div className="flex items-end justify-between gap-3">
+                        <div className="mt-3 rounded-3xl border border-black/10 bg-cream-50 p-3">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                             <div>
-                              <div className="text-sm font-semibold text-hlblack">
-                                Specialties
-                              </div>
+                              <div className="text-sm font-semibold text-hlblack">Specialties</div>
                               <div className="text-xs text-black/60">
                                 Update which services this staff member can perform.
                               </div>
                             </div>
 
-                            <InputField
-                              className="max-w-[220px]"
-                              placeholder="Search services..."
-                              value={editSvcQ}
-                              onChange={(e) => setEditSvcQ(e.target.value)}
-                            />
+                            <div className="w-full sm:w-[220px]">
+                              <div className="relative">
+                                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-black/40" />
+                                <input
+                                  value={editSvcQ}
+                                  onChange={(e) => setEditSvcQ(e.target.value)}
+                                  placeholder="Search services..."
+                                  className="w-full rounded-2xl border border-black/10 bg-white px-9 py-2 text-sm outline-none shadow-sm focus:ring-2 focus:ring-hlgreen-600/30"
+                                />
+                              </div>
+                            </div>
                           </div>
 
                           <div className="mt-3 max-h-[260px] overflow-auto pr-1 space-y-2">
@@ -644,15 +660,12 @@ export default function StaffAdmin() {
                               return (
                                 <label
                                   key={`edit-${sid}`}
-                                  className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-black/10 bg-cream-50 px-3 py-2 hover:bg-cream-100"
+                                  className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-black/10 bg-white px-3 py-2 hover:bg-cream-100 transition"
                                 >
                                   <div className="min-w-0">
-                                    <div className="text-sm font-semibold text-hlblack truncate">
-                                      {svc.name}
-                                    </div>
+                                    <div className="text-sm font-semibold text-hlblack truncate">{svc.name}</div>
                                     <div className="text-xs text-black/60">
-                                      {serviceSpecialty(svc)} • {svc.durationMinutes} min •{" "}
-                                      {svc.price} €
+                                      {serviceSpecialty(svc)} • {svc.durationMinutes} min • {svc.price} €
                                     </div>
                                   </div>
 
@@ -667,44 +680,9 @@ export default function StaffAdmin() {
                             })}
 
                             {filteredEditServices.length === 0 ? (
-                              <div className="text-sm text-black/60">
-                                No services found.
-                              </div>
+                              <div className="text-sm text-black/60">No services found.</div>
                             ) : null}
                           </div>
-
-                          {editForm.specialties.length ? (
-                            <div className="mt-3">
-                              <div className="text-xs text-black/60">Selected</div>
-                              <div className="mt-2 flex flex-wrap gap-1.5">
-                                {editForm.specialties
-                                  .map((sid) => serviceById.get(String(sid)))
-                                  .filter(Boolean)
-                                  .slice(0, 10)
-                                  .map((svc) => {
-                                    const sp = serviceSpecialty(svc);
-                                    return (
-                                      <span
-                                        key={`edit-sel-${svc._id}`}
-                                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] leading-4 ${toneFor(
-                                          sp
-                                        )}`}
-                                        title={`${svc.name} (${sp})`}
-                                      >
-                                        <span className="font-semibold">{svc.name}</span>
-                                        <span className="opacity-70">• {sp}</span>
-                                      </span>
-                                    );
-                                  })}
-
-                                {editForm.specialties.length > 10 ? (
-                                  <span className="inline-flex items-center rounded-full border border-black/10 bg-white px-2 py-1 text-[11px] text-black/60">
-                                    +{editForm.specialties.length - 10} more
-                                  </span>
-                                ) : null}
-                              </div>
-                            </div>
-                          ) : null}
                         </div>
                       </div>
                     ) : null}
@@ -712,9 +690,7 @@ export default function StaffAdmin() {
                 );
               })}
 
-              {filteredStaff.length === 0 && (
-                <div className="text-sm text-black/60">No staff.</div>
-              )}
+              {filteredStaff.length === 0 && <div className="text-sm text-black/60">No staff.</div>}
             </div>
           </CardBody>
         </Card>

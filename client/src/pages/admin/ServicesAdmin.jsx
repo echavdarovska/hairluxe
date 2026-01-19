@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import {
   Pencil,
@@ -8,6 +8,9 @@ import {
   Save,
   X,
   Power,
+  Search,
+  Plus,
+  RefreshCw,
 } from "lucide-react";
 
 import api from "../../lib/api";
@@ -17,6 +20,7 @@ import Button from "../../components/Button";
 import InputField from "../../components/InputField";
 import Select from "../../components/Select";
 import { Card, CardBody } from "../../components/Card";
+import PageHeader from "../../components/PageHeader";
 
 const SPECIALTY_OPTIONS = [
   { value: "Haircut", label: "Haircut" },
@@ -27,14 +31,30 @@ const SPECIALTY_OPTIONS = [
   { value: "General", label: "General" },
 ];
 
+function tonePill(active) {
+  return active
+    ? "bg-hlgreen-600/10 text-hlgreen-700 ring-1 ring-hlgreen-600/15"
+    : "bg-black/5 text-black/60 ring-1 ring-black/10";
+}
+
+function specialtyBadge(label) {
+  const l = String(label || "General");
+  return (
+    <span className="inline-flex items-center rounded-full bg-cream-100 px-2 py-0.5 text-[11px] font-semibold text-black/70 ring-1 ring-black/5">
+      {l}
+    </span>
+  );
+}
+
 export default function AdminServices() {
   const [services, setServices] = useState([]);
   const [q, setQ] = useState("");
+
   const [saving, setSaving] = useState(false);
 
-  // edit mode
   const [editingId, setEditingId] = useState(null);
   const [savingEdit, setSavingEdit] = useState(false);
+
   const [editForm, setEditForm] = useState({
     name: "",
     description: "",
@@ -53,14 +73,15 @@ export default function AdminServices() {
     active: "true",
   });
 
-  async function load() {
+  const load = useCallback(async () => {
     const res = await api.get("/services");
     setServices(res.data.services || []);
-  }
+  }, []);
 
   useEffect(() => {
-    load();
-  }, []);
+    load().catch(() => toast.error("Failed to load services"));
+  }, [load]);
+
 
   const filtered = useMemo(() => {
     const qq = q.trim().toLowerCase();
@@ -72,6 +93,12 @@ export default function AdminServices() {
     });
   }, [services, q]);
 
+  const metrics = useMemo(() => {
+    const active = services.filter((s) => s.active).length;
+    const inactive = services.length - active;
+    return { total: services.length, active, inactive };
+  }, [services]);
+
   function validateServicePayload(payload) {
     if (!payload.name) return toast.error("Name is required"), false;
     if (!payload.specialty) return toast.error("Specialty is required"), false;
@@ -79,7 +106,10 @@ export default function AdminServices() {
     if (!Number.isFinite(payload.price) || payload.price < 0)
       return toast.error("Price must be a valid number"), false;
 
-    if (!Number.isFinite(payload.durationMinutes) || payload.durationMinutes < 15)
+    if (
+      !Number.isFinite(payload.durationMinutes) ||
+      payload.durationMinutes < 15
+    )
       return toast.error("Duration must be at least 15 minutes"), false;
 
     return true;
@@ -126,7 +156,6 @@ export default function AdminServices() {
       await api.put(`/services/${s._id}`, { active: !s.active });
       await load();
 
-      // if editing same record, keep the edit form's status in sync
       if (editingId === s._id) {
         setEditForm((p) => ({ ...p, active: String(!s.active) }));
       }
@@ -190,24 +219,61 @@ export default function AdminServices() {
     }
   }
 
-  return (
-    <AdminLayout>
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-hlblack">Services</h2>
-          <p className="mt-1 text-sm text-black/60">
-            Create and manage services.
-          </p>
-        </div>
+  const headerActions = (
+    <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-2">
+      <div className="relative w-full sm:w-[320px]">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-black/40" />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search services..."
+          className="w-full rounded-2xl border border-black/10 bg-white px-10 py-2.5 text-sm outline-none shadow-sm focus:ring-2 focus:ring-hlgreen-600/30"
+        />
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
-        {/* CREATE SERVICE */}
-        <Card>
-          <CardBody>
-            <div className="text-sm font-semibold">Create service</div>
+    </div>
+  );
 
-            <form className="mt-4 space-y-3" onSubmit={create}>
+  return (
+    <AdminLayout>
+      <PageHeader
+        title="Services"
+        subtitle="Create, edit and enable/disable services that appear in booking."
+        actions={headerActions}
+      />
+
+      <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
+        <span className="rounded-full bg-white px-3 py-1 font-semibold text-black/60 ring-1 ring-black/5">
+          Total: <span className="text-hlblack">{metrics.total}</span>
+        </span>
+        <span className="rounded-full bg-hlgreen-600/10 px-3 py-1 font-semibold text-hlgreen-700 ring-1 ring-hlgreen-600/15">
+          Active: <span className="text-hlgreen-800">{metrics.active}</span>
+        </span>
+        <span className="rounded-full bg-black/5 px-3 py-1 font-semibold text-black/60 ring-1 ring-black/10">
+          Inactive: <span className="text-hlblack">{metrics.inactive}</span>
+        </span>
+      </div>
+
+      <div className="mt-6 grid gap-5 lg:grid-cols-[420px_1fr]">
+        {/* CREATE */}
+        <Card className="rounded-3xl">
+          <CardBody>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold text-hlblack">
+                  Create service
+                </div>
+                <div className="mt-1 text-xs text-black/60">
+                  Active services show up for booking and staff specialties.
+                </div>
+              </div>
+
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-cream-100 ring-1 ring-black/5">
+                <Plus className="h-5 w-5 text-hlgreen-700" />
+              </span>
+            </div>
+
+            <form className="mt-5 space-y-3" onSubmit={create}>
               <InputField
                 label="Name"
                 value={form.name}
@@ -266,33 +332,22 @@ export default function AdminServices() {
                 ]}
               />
 
-              <Button
-                type="submit"
-                className="w-full"
-                loading={saving}
-                disabled={saving}
-              >
+              <Button type="submit" className="w-full" loading={saving} disabled={saving}>
                 Create
               </Button>
             </form>
           </CardBody>
         </Card>
 
-        {/* ALL SERVICES */}
-        <Card>
+        {/* LIST */}
+        <Card className="rounded-3xl">
           <CardBody>
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-sm font-semibold">All services</div>
-
-              <InputField
-                className="max-w-[220px]"
-                placeholder="Search..."
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-              />
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-semibold text-hlblack">All services</div>
+              <div className="text-xs text-black/50">{filtered.length} shown</div>
             </div>
 
-            <div className="mt-4 space-y-3 max-h-[520px] overflow-auto pr-1">
+            <div className="mt-4 space-y-3 max-h-[620px] overflow-auto pr-1">
               {filtered.map((s) => {
                 const specialty = s.specialty ?? s.category ?? "General";
                 const isEditing = editingId === s._id;
@@ -300,33 +355,43 @@ export default function AdminServices() {
                 return (
                   <div
                     key={s._id}
-                    className={`rounded-xl border bg-cream-50 p-3 ${
-                      isEditing ? "border-hlgreen-600/30 ring-2 ring-hlgreen-600/10" : "border-black/10"
-                    }`}
+                    className={[
+                      "rounded-3xl border p-4 shadow-sm transition",
+                      isEditing
+                        ? "border-hlgreen-600/30 bg-hlgreen-600/5 ring-2 ring-hlgreen-600/10"
+                        : "border-black/10 bg-white hover:bg-cream-50",
+                    ].join(" ")}
                   >
-                    {/* HEADER ROW */}
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <div className="font-semibold text-hlblack truncate">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="truncate text-base font-semibold text-hlblack">
                             {s.name}
                           </div>
 
-                          {s.active ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-hlgreen-600/10 px-2 py-0.5 text-[11px] font-semibold text-hlgreen-700">
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                              Active
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-semibold text-black/60">
-                              <XCircle className="h-3.5 w-3.5" />
-                              Inactive
-                            </span>
-                          )}
+                          {specialtyBadge(specialty)}
+
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${tonePill(
+                              !!s.active
+                            )}`}
+                          >
+                            {s.active ? (
+                              <>
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                Active
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="h-3.5 w-3.5" />
+                                Inactive
+                              </>
+                            )}
+                          </span>
                         </div>
 
                         <div className="mt-1 text-xs text-black/60">
-                          {specialty} • {s.durationMinutes} min • {s.price} €
+                          {s.durationMinutes} min • {s.price} €
                         </div>
 
                         {s.description ? (
@@ -336,7 +401,6 @@ export default function AdminServices() {
                         ) : null}
                       </div>
 
-                      {/* ACTIONS (ROW) */}
                       {!isEditing ? (
                         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                           <Button
@@ -344,9 +408,10 @@ export default function AdminServices() {
                             variant="outline"
                             onClick={() => startEdit(s)}
                             className="gap-2"
+                            title="Edit"
                           >
                             <Pencil className="h-4 w-4" />
-                         
+                            <span className="hidden sm:inline">Edit</span>
                           </Button>
 
                           <Button
@@ -354,9 +419,12 @@ export default function AdminServices() {
                             variant="outline"
                             onClick={() => toggleActive(s)}
                             className="gap-2"
+                            title="Enable/Disable"
                           >
                             <Power className="h-4 w-4" />
-                            {s.active ? "Disable" : "Enable"}
+                            <span className="hidden sm:inline">
+                              {s.active ? "Disable" : "Enable"}
+                            </span>
                           </Button>
 
                           <Button
@@ -364,9 +432,10 @@ export default function AdminServices() {
                             variant="danger"
                             onClick={() => del(s._id)}
                             className="gap-2"
+                            title="Delete"
                           >
                             <Trash2 className="h-4 w-4" />
-                       
+                            <span className="hidden sm:inline">Delete</span>
                           </Button>
                         </div>
                       ) : (
@@ -390,15 +459,14 @@ export default function AdminServices() {
                             className="gap-2"
                           >
                             <X className="h-4 w-4" />
-                        
+                            Cancel
                           </Button>
                         </div>
                       )}
                     </div>
 
-                    {/* EDIT PANEL */}
                     {isEditing ? (
-                      <div className="mt-4 rounded-xl border border-black/10 bg-white p-3">
+                      <div className="mt-4 rounded-3xl border border-black/10 bg-white p-4">
                         <div className="grid gap-3 sm:grid-cols-2">
                           <InputField
                             label="Name"
@@ -413,10 +481,7 @@ export default function AdminServices() {
                             label="Specialty"
                             value={editForm.specialty}
                             onChange={(e) =>
-                              setEditForm((p) => ({
-                                ...p,
-                                specialty: e.target.value,
-                              }))
+                              setEditForm((p) => ({ ...p, specialty: e.target.value }))
                             }
                             options={SPECIALTY_OPTIONS}
                           />
