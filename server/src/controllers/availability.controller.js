@@ -1,93 +1,102 @@
 import { Service } from "../models/Service.js";
 import { Staff } from "../models/Staff.js";
 import { Appointment } from "../models/Appointment.js";
-import { TimeOff } from "../models/TimeOff.js";
-import { getOrCreateSettings } from "./settings.controller.js";
-import {
-  addMinutesToHhmm,
-  compareHhmm,
-  dayOfWeekFromDate,
-  overlaps,
-} from "../lib/time.js";
+import { StaffWorkingHours } from "../models/StaffWorkingHours.js";
+import { StaffTimeOff } from "../models/StaffTimeOff.js";
+import { addMinutesToHhmm, compareHhmm, overlaps } from "../lib/time.js";
+
+const BLOCKING_STATUSES = ["CONFIRMED", "PENDING_ADMIN_REVIEW", "PROPOSED_TO_CLIENT"];
+
+function todayLocalISO() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+function compareYMD(a, b) {
+  return String(a).localeCompare(String(b));
+}
+function timeToMinutes(t) {
+  const [h, m] = String(t || "").split(":").map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return null;
+  return h * 60 + m;
+}
+function toDayOfWeekMon0(dateStr) {
+  const js = new Date(dateStr + "T00:00:00").getDay(); // 0=Sun..6=Sat
+  return (js + 6) % 7; // 0=Mon..6=Sun
+}
 
 export async function getAvailability(req, res, next) {
   try {
     const { serviceId, staffId, date } = req.query;
 
     if (!serviceId || !staffId || !date) {
-      res.status(400);
-      throw new Error("serviceId, staffId and date are required");
+      return res.status(400).json({ message: "serviceId, staffId and date are required" });
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
+      return res.status(400).json({ message: "date must be YYYY-MM-DD" });
     }
 
-    // Expect YYYY-MM-DD
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
-      res.status(400);
-      throw new Error("date must be YYYY-MM-DD");
+    const today = todayLocalISO();
+    if (compareYMD(date, today) < 0) {
+      return res.json({ slots: [] });
     }
 
     const service = await Service.findById(serviceId);
-    if (!service) {
-      res.status(404);
-      throw new Error("Service not found");
-    }
+    if (!service) return res.status(404).json({ message: "Service not found" });
 
     const staff = await Staff.findById(staffId);
-    if (!staff || !staff.active) {
-      res.status(404);
-      throw new Error("Staff not found");
-    }
+    if (!staff || !staff.active) return res.status(404).json({ message: "Staff not found" });
 
-    const settings = await getOrCreateSettings();
+    // Uses per-staff working hours (StaffWorkingHours) instead of global settings hours.
+    const dow = toDayOfWeekMon0(date);
+    const wh = await StaffWorkingHours.findOne({ staffId, dayOfWeek: dow }).lean();
+    if (!wh) return res.json({ slots: [] });
 
-    // NOTE: you currently use GLOBAL working hours from settings.
-    // If you later switch to per-staff working hours, change this part only.
-    const dow = dayOfWeekFromDate(date);
-    const wh = settings.workingHours.find((x) => x.dayOfWeek === dow);
-
-    if (!wh || wh.isClosed) {
-      return res.json({ slots: [] });
-    }
-
-    // ✅ BLOCK WHOLE DAY if staff has time-off covering this date
-    // Supports single day (startDate=endDate) and ranges.
-    const timeOffForDate = await TimeOff.find({
-      staffId,
-      startDate: { $lte: date },
-      endDate: { $gte: date },
-    }).select("startTime endTime startDate endDate reason");
-
-    // If any timeOff record covers the date and has no times, treat as FULL DAY OFF
+    // Supports full-day off (no start/end) and partial blocks for the date.
+    const timeOffForDate = await StaffTimeOff.find({ staffId, date }).lean();
     const fullDayOff = timeOffForDate.some((t) => !t.startTime || !t.endTime);
-    if (fullDayOff) {
-      return res.json({ slots: [] });
-    }
+    if (fullDayOff) return res.json({ slots: [] });
 
-    const slotLen = settings.slotLengthMinutes;
+    // NOTE: slot step is still global unless you store slotLength per staff/service.
+    const slotLen = 30; // <-- align this with your actual slot length source if you store it elsewhere
     const duration = service.durationMinutes;
 
-    const confirmed = await Appointment.find({
+    const blockingAppts = await Appointment.find({
       staffId,
       date,
-      status: "CONFIRMED",
+      status: { $in: BLOCKING_STATUSES },
     }).select("startTime endTime");
 
-    const slots = [];
+    const nowMin =
+      date === today ? new Date().getHours() * 60 + new Date().getMinutes() : null;
 
+    const slots = [];
     let cur = wh.startTime;
+
     while (true) {
       const end = addMinutesToHhmm(cur, duration);
       if (compareHhmm(end, wh.endTime) > 0) break;
 
-      const conflictsConfirmed = confirmed.some((a) =>
+      if (nowMin != null) {
+        const curMin = timeToMinutes(cur);
+        if (curMin != null && curMin < nowMin) {
+          cur = addMinutesToHhmm(cur, slotLen);
+          if (compareHhmm(cur, wh.endTime) >= 0) break;
+          continue;
+        }
+      }
+
+      const conflictsAppt = blockingAppts.some((a) =>
         overlaps(cur, end, a.startTime, a.endTime)
       );
 
-      // Partial-day time off blocks
       const conflictsOff = timeOffForDate.some((t) =>
         overlaps(cur, end, t.startTime, t.endTime)
       );
 
-      if (!conflictsConfirmed && !conflictsOff) {
+      if (!conflictsAppt && !conflictsOff) {
         slots.push({ startTime: cur, endTime: end });
       }
 
@@ -95,7 +104,7 @@ export async function getAvailability(req, res, next) {
       if (compareHhmm(cur, wh.endTime) >= 0) break;
     }
 
-    res.json({ slots });
+    return res.json({ slots });
   } catch (e) {
     next(e);
   }

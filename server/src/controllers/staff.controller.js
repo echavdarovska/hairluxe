@@ -2,7 +2,7 @@ import { Staff } from "../models/Staff.js";
 import { staffCreateSchema } from "../validators/staff.validators.js";
 
 const STAFF_SPECIALTIES_SELECT =
-  "name specialty category durationMinutes price active";
+  "name category durationMinutes price active";
 
 export async function listStaff(req, res, next) {
   try {

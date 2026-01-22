@@ -274,23 +274,31 @@ export default function AdminSchedule() {
     [staffList, selected]
   );
 
-  const headerActions = (
-    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-      <button className={smallBtn} onClick={load} title="Refresh board">
-        <span className="inline-flex items-center gap-2">
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </span>
-      </button>
 
-      <Link to="/admin/appointments" className={smallBtn} title="Open appointments">
-        <span className="inline-flex items-center gap-2">
-          <CalendarDays className="h-4 w-4" />
-          Appointments
-        </span>
-      </Link>
-    </div>
-  );
+
+  const headerActions = (
+  <div className="flex w-full flex-col items-center justify-center gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-center">
+    <button type="button" className={smallBtn} onClick={load} title="Refresh board">
+      <span className="inline-flex items-center  gap-2">
+        <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+        Refresh
+      </span>
+    </button>
+
+    <button
+      type="button"
+      className={smallBtn}
+      onClick={() => (window.location.href = "/admin/appointments")}
+      title="Open appointments"
+    >
+      <span className="inline-flex items-center justify-center gap-2">
+        <CalendarDays className="h-4 w-4" />
+        Appointments
+      </span>
+    </button>
+  </div>
+);
+
 
   return (
     <AdminLayout>
@@ -442,7 +450,7 @@ export default function AdminSchedule() {
       </Card>
 
       {/* Board */}
-      <Card className="mt-4 rounded-3xl border border-black/5">
+      <Card className="mt-4 rounded-3xl border border-black/5 ovarflow-x-auto">
         <CardBody className="p-5">
           {loading ? (
             <div className="flex items-center justify-between">
@@ -453,7 +461,7 @@ export default function AdminSchedule() {
             </div>
           ) : (
             <>
-              <div className="overflow-hidden rounded-3xl border border-black/10 bg-white">
+              <div className="overflow-x-auto rounded-3xl border border-black/10 bg-white">
                 {/* header row */}
                 <div
                   className="grid bg-white"

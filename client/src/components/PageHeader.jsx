@@ -1,13 +1,3 @@
-import React from "react";
-
-/**
- * PageHeader
- * - title: string
- * - subtitle: string (optional)
- * - meta: ReactNode (optional) -> small line under subtitle
- * - actions: ReactNode (optional) -> right side actions area
- * - variant: "soft" | "plain" (optional) default "soft"
- */
 export default function PageHeader({
   title,
   subtitle,
@@ -22,8 +12,8 @@ export default function PageHeader({
 
   return (
     <div className={wrap}>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
+        <div className="min-w-0 flex-1">
           <h2 className="text-3xl font-extrabold text-hlblack">{title}</h2>
 
           {subtitle ? (

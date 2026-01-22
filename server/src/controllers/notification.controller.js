@@ -2,9 +2,11 @@ import { Notification } from "../models/Notification.js";
 
 export async function listNotifications(req, res, next) {
   try {
+    // Returns latest notifications for the logged-in user (capped to avoid unbounded lists)
     const items = await Notification.find({ userId: req.user._id })
       .sort({ createdAt: -1 })
-      .limit(100);
+      .limit(100)
+      .lean();
 
     res.json({ notifications: items });
   } catch (e) {
@@ -14,6 +16,7 @@ export async function listNotifications(req, res, next) {
 
 export async function markRead(req, res, next) {
   try {
+    // Ensures users can only mark their own notifications as read
     const n = await Notification.findOneAndUpdate(
       { _id: req.params.id, userId: req.user._id },
       { isRead: true },
@@ -21,8 +24,7 @@ export async function markRead(req, res, next) {
     );
 
     if (!n) {
-      res.status(404);
-      throw new Error("Notification not found");
+      return res.status(404).json({ message: "Notification not found" });
     }
 
     res.json({ notification: n });
@@ -33,6 +35,7 @@ export async function markRead(req, res, next) {
 
 export async function markAllRead(req, res, next) {
   try {
+    // Bulk update for UX performance (no per-item requests)
     await Notification.updateMany(
       { userId: req.user._id, isRead: false },
       { isRead: true }

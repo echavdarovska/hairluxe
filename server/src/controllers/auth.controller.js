@@ -13,8 +13,11 @@ export async function register(req, res, next) {
 
     const existing = await User.findOne({ email: data.email });
     if (existing) {
-      res.status(409);
-      throw new Error("Email is already registered");
+      return res.status(409).json({ message: "Email is already registered" });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      return res.status(500).json({ message: "JWT_SECRET is not configured" });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -24,14 +27,14 @@ export async function register(req, res, next) {
       name: data.name,
       email: data.email,
       passwordHash,
-      role: "client"
+      role: "client",
     });
 
     const token = signToken(user._id.toString(), user.role);
 
     res.status(201).json({
       token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role }
+      user: { id: user._id, name: user.name, email: user.email, role: user.role },
     });
   } catch (e) {
     next(e);
@@ -44,21 +47,23 @@ export async function login(req, res, next) {
 
     const user = await User.findOne({ email: data.email });
     if (!user) {
-      res.status(401);
-      throw new Error("Invalid credentials");
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const ok = await bcrypt.compare(data.password, user.passwordHash);
     if (!ok) {
-      res.status(401);
-      throw new Error("Invalid credentials");
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      return res.status(500).json({ message: "JWT_SECRET is not configured" });
     }
 
     const token = signToken(user._id.toString(), user.role);
 
     res.json({
       token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role }
+      user: { id: user._id, name: user.name, email: user.email, role: user.role },
     });
   } catch (e) {
     next(e);
@@ -66,10 +71,11 @@ export async function login(req, res, next) {
 }
 
 export async function me(req, res) {
+  // Returns the user loaded by auth middleware (role-based UI can use req.user.role).
   res.json({ user: req.user });
 }
 
 export async function logout(req, res) {
-  // Stateless JWT: client removes token
+  // Stateless JWT: logging out means the client deletes the token.
   res.json({ ok: true });
 }

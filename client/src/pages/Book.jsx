@@ -10,9 +10,48 @@ import Select from "../components/Select";
 import InputField from "../components/InputField";
 
 function getStaffServiceIds(st) {
-  const raw = st?.serviceIds ?? st?.services ?? st?.specialties ?? st?.service_ids ?? [];
-  if (Array.isArray(raw)) return raw.map((x) => (typeof x === "string" ? x : x?._id)).filter(Boolean);
+  const raw =
+    st?.serviceIds ?? st?.services ?? st?.specialties ?? st?.service_ids ?? [];
+  if (Array.isArray(raw))
+    return raw
+      .map((x) => (typeof x === "string" ? x : x?._id))
+      .filter(Boolean);
   return [];
+}
+
+/**
+ * Local "YYYY-MM-DD" (NOT UTC) so min date matches user's real today.
+ */
+function todayLocalISO() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function compareYMD(a, b) {
+  // Works for YYYY-MM-DD strings
+  return String(a).localeCompare(String(b));
+}
+
+function timeToMinutes(t) {
+  const [h, m] = String(t || "").split(":").map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return null;
+  return h * 60 + m;
+}
+
+function isSlotInPast(dateStr, startTime) {
+  const today = todayLocalISO();
+  if (dateStr !== today) return false;
+
+  const slotMin = timeToMinutes(startTime);
+  if (slotMin == null) return false;
+
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+
+  return slotMin < nowMin;
 }
 
 function StepHeader({ n, title, subtitle, done, disabled }) {
@@ -22,22 +61,35 @@ function StepHeader({ n, title, subtitle, done, disabled }) {
         <div
           className={[
             "flex h-9 w-9 items-center justify-center rounded-full text-sm font-extrabold",
-            disabled ? "bg-black/5 text-black/35" : done ? "bg-hlgreen-600 text-white" : "bg-cream-100 text-hlgreen-700",
+            disabled
+              ? "bg-black/5 text-black/35"
+              : done
+              ? "bg-hlgreen-600 text-white"
+              : "bg-cream-100 text-hlgreen-700",
           ].join(" ")}
         >
           {done ? "✓" : n}
         </div>
 
         <div>
-          <div className={["text-sm font-semibold", disabled ? "text-black/45" : "text-hlblack"].join(" ")}>
+          <div
+            className={[
+              "text-sm font-semibold",
+              disabled ? "text-black/45" : "text-hlblack",
+            ].join(" ")}
+          >
             {title}
           </div>
-          {subtitle ? <div className="mt-0.5 text-xs text-black/60">{subtitle}</div> : null}
+          {subtitle ? (
+            <div className="mt-0.5 text-xs text-black/60">{subtitle}</div>
+          ) : null}
         </div>
       </div>
 
       {done ? (
-        <span className="rounded-full bg-black/5 px-2 py-1 text-[11px] font-semibold text-black/60">Done</span>
+        <span className="rounded-full bg-black/5 px-2 py-1 text-[11px] font-semibold text-black/60">
+          Done
+        </span>
       ) : null}
     </div>
   );
@@ -45,7 +97,10 @@ function StepHeader({ n, title, subtitle, done, disabled }) {
 
 export default function Book() {
   const location = useLocation();
-  const params = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const params = useMemo(
+    () => new URLSearchParams(location.search),
+    [location.search]
+  );
   const serviceFromUrl = params.get("service");
 
   const [services, setServices] = useState([]);
@@ -61,11 +116,16 @@ export default function Book() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [loadingInit, setLoadingInit] = useState(true);
 
+  const minDate = useMemo(() => todayLocalISO(), []);
+
   useEffect(() => {
     (async () => {
       try {
         setLoadingInit(true);
-        const [sRes, stRes] = await Promise.all([api.get("/services"), api.get("/staff")]);
+        const [sRes, stRes] = await Promise.all([
+          api.get("/services"),
+          api.get("/staff"),
+        ]);
         setServices(sRes.data.services || []);
         setStaff(stRes.data.staff || []);
       } finally {
@@ -111,6 +171,17 @@ export default function Book() {
     setSlots([]);
   }, [staffId]);
 
+  // ✅ Guard: if someone types/pastes a past date, reject it
+  useEffect(() => {
+    if (!date) return;
+    if (compareYMD(date, minDate) < 0) {
+      toast.error("You can’t book past dates.");
+      setDate("");
+      setSlot("");
+      setSlots([]);
+    }
+  }, [date, minDate]);
+
   // load slots
   useEffect(() => {
     async function loadSlots() {
@@ -119,10 +190,25 @@ export default function Book() {
         setSlot("");
         return;
       }
+
+      // extra guard
+      if (compareYMD(date, minDate) < 0) {
+        setSlots([]);
+        setSlot("");
+        return;
+      }
+
       setLoadingSlots(true);
       try {
-        const res = await api.get("/availability", { params: { serviceId, staffId, date } });
-        setSlots(res.data.slots || []);
+        const res = await api.get("/availability", {
+          params: { serviceId, staffId, date },
+        });
+
+        const raw = res.data.slots || [];
+        // ✅ filter past times if booking for today
+        const filtered = raw.filter((s) => !isSlotInPast(date, s.startTime));
+
+        setSlots(filtered);
         setSlot("");
       } catch (e) {
         toast.error(e?.response?.data?.message || "Failed to load slots");
@@ -131,13 +217,24 @@ export default function Book() {
       }
     }
     loadSlots();
-  }, [serviceId, staffId, date]);
+  }, [serviceId, staffId, date, minDate]);
 
   async function submitRequest() {
     if (!serviceId || !staffId || !date || !slot) {
       toast.error("Please complete all steps");
       return;
     }
+
+    // ✅ Frontend hard-stop (backend must also validate)
+    if (compareYMD(date, minDate) < 0) {
+      toast.error("Cannot book past dates.");
+      return;
+    }
+    if (isSlotInPast(date, slot)) {
+      toast.error("That time is already in the past. Pick a later slot.");
+      return;
+    }
+
     try {
       await api.post("/appointments", {
         serviceId,
@@ -174,14 +271,21 @@ export default function Book() {
         <div className="mt-2 rounded-3xl border border-black/5 bg-gradient-to-br from-cream-100 to-white p-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 className="text-3xl font-extrabold text-hlblack">Book Appointment</h2>
+              <h2 className="text-3xl font-extrabold text-hlblack">
+                Book Appointment
+              </h2>
               <p className="mt-1 text-sm text-black/60">
-                Request a slot. Admin will confirm, decline, or propose a new time.
+                Request a slot. Admin will confirm, decline, or propose a new
+                time.
               </p>
               {selectedService ? (
                 <div className="mt-2 text-xs text-black/60">
-                  Selected: <span className="font-semibold text-hlblack">{selectedService.name}</span>{" "}
-                  · {selectedService.durationMinutes} min · {selectedService.price} €
+                  Selected:{" "}
+                  <span className="font-semibold text-hlblack">
+                    {selectedService.name}
+                  </span>{" "}
+                  · {selectedService.durationMinutes} min ·{" "}
+                  {selectedService.price} €
                 </div>
               ) : null}
             </div>
@@ -210,7 +314,10 @@ export default function Book() {
                 disabled={false}
               />
               <div className="mt-4">
-                <Select value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
+                <Select
+                  value={serviceId}
+                  onChange={(e) => setServiceId(e.target.value)}
+                >
                   <option value="">Select service...</option>
                   {services
                     .filter((s) => s.active)
@@ -223,7 +330,12 @@ export default function Book() {
               </div>
             </Card>
 
-            <Card className={["p-6 rounded-3xl transition", serviceId ? "" : "opacity-60"].join(" ")}>
+            <Card
+              className={[
+                "p-6 rounded-3xl transition",
+                serviceId ? "" : "opacity-60",
+              ].join(" ")}
+            >
               <StepHeader
                 n="2"
                 title="Choose staff"
@@ -232,7 +344,11 @@ export default function Book() {
                 disabled={!serviceId}
               />
               <div className="mt-4">
-                <Select disabled={!serviceId} value={staffId} onChange={(e) => setStaffId(e.target.value)}>
+                <Select
+                  disabled={!serviceId}
+                  value={staffId}
+                  onChange={(e) => setStaffId(e.target.value)}
+                >
                   <option value="">
                     {!serviceId
                       ? "Select service first..."
@@ -249,7 +365,12 @@ export default function Book() {
               </div>
             </Card>
 
-            <Card className={["p-6 rounded-3xl transition", serviceId && staffId ? "" : "opacity-60"].join(" ")}>
+            <Card
+              className={[
+                "p-6 rounded-3xl transition",
+                serviceId && staffId ? "" : "opacity-60",
+              ].join(" ")}
+            >
               <StepHeader
                 n="3"
                 title="Choose date"
@@ -261,9 +382,13 @@ export default function Book() {
                 <InputField
                   disabled={!serviceId || !staffId}
                   type="date"
+                  min={minDate}
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                 />
+                <div className="mt-2 text-[11px] text-black/50">
+                  Earliest bookable date: <span className="font-semibold">{minDate}</span>
+                </div>
               </div>
             </Card>
 
@@ -307,7 +432,7 @@ export default function Book() {
 
                 {serviceId && staffId && date && !loadingSlots && slots.length === 0 ? (
                   <div className="mt-2 text-xs text-black/60">
-                    No slots for this day. Try another date.
+                    No slots for this day (or remaining times are in the past). Try another date.
                   </div>
                 ) : null}
               </div>
@@ -328,7 +453,9 @@ export default function Book() {
 
               <div className="mt-4 flex items-center justify-between">
                 <div className="text-xs text-black/60">
-                  {selectedService ? `Service duration: ${selectedService.durationMinutes} min` : ""}
+                  {selectedService
+                    ? `Service duration: ${selectedService.durationMinutes} min`
+                    : ""}
                 </div>
 
                 <Button onClick={submitRequest} disabled={!stepDone.s4}>
@@ -369,13 +496,19 @@ export default function Book() {
                   </div>
 
                   <div className="mt-2 rounded-2xl border border-black/5 bg-cream-100 p-4">
-                    <div className="text-xs font-semibold text-black/50">What happens next</div>
+                    <div className="text-xs font-semibold text-black/50">
+                      What happens next
+                    </div>
                     <div className="mt-1 text-xs text-black/70">
                       Admin reviews your request and either confirms it or proposes a different time.
                     </div>
                   </div>
 
-                  <Button onClick={submitRequest} disabled={!stepDone.s4} className="w-full">
+                  <Button
+                    onClick={submitRequest}
+                    disabled={!stepDone.s4}
+                    className="w-full"
+                  >
                     Confirm & Send
                   </Button>
 

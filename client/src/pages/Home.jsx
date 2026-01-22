@@ -1,7 +1,7 @@
 // src/pages/Home.jsx
 import Button from "../components/Button";
 import { Link } from "react-router-dom";
-import { Sparkles, CalendarCheck2, Scissors, MapPin, Phone, Mail } from "lucide-react";
+import { Sparkles, CalendarCheck2, Scissors } from "lucide-react";
 
 function Step({ n, title, desc }) {
   return (
@@ -37,76 +37,15 @@ function FeatureCard({ icon: Icon, title, desc }) {
   );
 }
 
-function ServiceCard({ title, desc, price, imageUrl }) {
-  return (
-    <Link
-      to="/book"
-      className="group block overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-      title={`Book: ${title}`}
-    >
-      <div className="relative h-44 w-full">
-        <img
-          src={imageUrl}
-          alt={title}
-          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-          loading="lazy"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-
-        <div className="absolute bottom-3 left-4 right-4">
-          <div className="flex items-end justify-between gap-3">
-            <h3 className="text-lg font-extrabold text-white drop-shadow-sm">
-              {title}
-            </h3>
-
-            {price ? (
-              <span className="shrink-0 rounded-full bg-white/85 px-3 py-1 text-xs font-semibold text-hlblack ring-1 ring-black/5">
-                {price}
-              </span>
-            ) : null}
-          </div>
-        </div>
-      </div>
-
-      <div className="p-6">
-        <p className="text-sm text-black/70">{desc}</p>
-
-        <div className="mt-5 flex items-center justify-between">
-          <span className="text-sm font-semibold text-hlgreen-700">
-            Book this service →
-          </span>
-
-          <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-semibold text-black/60 ring-1 ring-black/5">
-            Tap card
-          </span>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function InfoPill({ icon: Icon, label, value }) {
-  return (
-    <div className="flex items-center gap-3 rounded-2xl border border-black/10 bg-white/70 px-4 py-3 backdrop-blur">
-      <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-cream-100 ring-1 ring-black/5">
-        <Icon className="h-5 w-5 text-hlgreen-700" />
-      </span>
-      <div className="min-w-0">
-        <div className="text-xs font-semibold uppercase tracking-wide text-black/50">
-          {label}
-        </div>
-        <div className="truncate text-sm font-semibold text-hlblack">{value}</div>
-      </div>
-    </div>
-  );
-}
-
 export default function Home() {
+  // ✅ Standard responsive shell: fluid on mobile, capped on desktop
+  const containerClass = "mx-auto w-full max-w-screen-xl px-4 sm:px-6 lg:px-8";
+
   return (
-    <div className="w-full flex justify-center">
-      <div className="w-full px-4 sm:px-6 lg:w-[80vw] lg:max-w-[80vw] lg:min-w-[80vw]">
+    <div className="w-full">
+      <div className={containerClass}>
         {/* HERO */}
-        <section className="relative mt-10 overflow-hidden rounded-3xl border border-black/5 bg-gradient-to-br from-cream-100 to-cream-200">
+        <section className="relative mt-6 sm:mt-10 overflow-hidden rounded-3xl border border-black/5 bg-gradient-to-br from-cream-100 to-cream-200">
           <div className="absolute inset-0">
             <img
               src="https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=2400&q=80"
@@ -119,9 +58,9 @@ export default function Home() {
             <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-white/50" />
           </div>
 
-          <div className="relative z-10 mx-auto max-w-4xl px-6 py-16 text-center sm:px-10 sm:py-20">
-            {/* 3 phrases chips */}
-            <div className="mx-auto inline-flex flex-wrap items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-black/70">
+          <div className="relative z-10 mx-auto max-w-4xl px-4 py-12 text-center sm:px-10 sm:py-20">
+            {/* chips */}
+            <div className="mx-auto inline-flex flex-wrap items-center justify-center gap-2 rounded-full px-2 py-2 text-[11px] sm:text-xs font-semibold text-black/70">
               <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 backdrop-blur-md ring-1 ring-black/10">
                 <span className="h-2 w-2 rounded-full bg-hlgreen-600" />
                 Premium care
@@ -138,24 +77,25 @@ export default function Home() {
               </span>
             </div>
 
-            <h1 className="mt-6 mb-5 text-4xl font-extrabold tracking-tight text-hlblack sm:text-5xl">
+            <h1 className="mt-6 mb-5 text-3xl font-extrabold tracking-tight text-hlblack sm:text-5xl">
               Welcome to <span className="text-hlgreen-600">HairLuxe</span>
             </h1>
 
-            <p className="mx-auto mb-9 max-w-2xl text-base text-black/70 sm:text-lg">
+            <p className="mx-auto mb-7 max-w-2xl text-sm text-black/70 sm:mb-9 sm:text-lg">
               Book your hair appointment in seconds. Choose a service and time —
               we’ll confirm it, or propose the closest available slot.
             </p>
 
-            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link to="/book">
-                <Button variant="primary" size="lg">
+            {/* ✅ Better mobile CTA: full-width buttons, then inline on sm+ */}
+            <div className="mx-auto flex w-full max-w-md flex-col items-center justify-center gap-3 sm:max-w-none sm:flex-row">
+              <Link to="/book" className="w-full sm:w-auto">
+                <Button variant="primary" size="lg" className="w-full sm:w-auto">
                   Book Appointment
                 </Button>
               </Link>
 
-              <Link to="/services">
-                <Button variant="secondary" size="lg">
+              <Link to="/services" className="w-full sm:w-auto">
+                <Button variant="secondary" size="lg" className="w-full sm:w-auto">
                   View Services
                 </Button>
               </Link>
@@ -163,9 +103,9 @@ export default function Home() {
           </div>
         </section>
 
-        {/* FEATURE STRIP (3 cards) */}
-        <section className="mt-10">
-          <div className="grid gap-4 md:grid-cols-3">
+        {/* FEATURE STRIP */}
+        <section className="mt-8 sm:mt-10">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <FeatureCard
               icon={CalendarCheck2}
               title="Admin-confirmed schedule"
@@ -184,24 +124,24 @@ export default function Home() {
           </div>
         </section>
 
-        {/* HOW IT WORKS (with gradient behind the glass) */}
-        <section className="mt-14">
+        {/* HOW IT WORKS */}
+        <section className="mt-10 sm:mt-14">
           <div className="relative overflow-hidden rounded-3xl border border-black/5 p-0">
-            {/* gradient wash */}
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-hlgreen-100/45 via-white/30 to-transparent" />
-            {/* soft radial glow */}
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(46,125,50,0.18),transparent_65%)]" />
 
-            {/* content glass layer */}
-            <div className="relative rounded-3xl bg-white/60 p-8 backdrop-blur sm:p-10">
+            <div className="relative rounded-3xl bg-white/60 p-6 backdrop-blur sm:p-10">
               <div className="mx-auto max-w-3xl text-center">
-                <h2 className="text-3xl font-bold text-hlblack">How booking works</h2>
-                <p className="mt-3 text-black/70">
+                <h2 className="text-2xl font-bold text-hlblack sm:text-3xl">
+                  How booking works
+                </h2>
+                <p className="mt-3 text-sm text-black/70 sm:text-base">
                   You request a slot. Admin confirms — or proposes a better time.
                 </p>
               </div>
 
-              <div className="mt-10 grid gap-5 md:grid-cols-4">
+              {/* ✅ Responsive steps: 1 col → 2 cols → 4 cols */}
+              <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <Step
                   n="1"
                   title="Request an appointment"
@@ -224,9 +164,9 @@ export default function Home() {
                 />
               </div>
 
-              <div className="mt-10 flex justify-center">
-                <Link to="/book">
-                  <Button variant="primary" size="lg">
+              <div className="mt-8 flex justify-center">
+                <Link to="/book" className="w-full max-w-sm sm:w-auto">
+                  <Button variant="primary" size="lg" className="w-full sm:w-auto">
                     Start Booking
                   </Button>
                 </Link>
@@ -236,34 +176,36 @@ export default function Home() {
         </section>
 
         {/* FOOT CTA */}
-        <section className="mt-16 mb-10">
-          <div className="relative overflow-hidden rounded-3xl border border-black/5 bg-cream-100 p-8 text-center sm:p-10">
+        <section className="mt-12 mb-10 sm:mt-16">
+          <div className="relative overflow-hidden rounded-3xl border border-black/5 bg-cream-100 p-6 text-center sm:p-10">
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-hlgreen-100/40" />
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(46,125,50,0.12),transparent_65%)]" />
 
             <div className="relative z-10">
-              <h2 className="text-3xl font-bold text-hlblack">
+              <h2 className="text-2xl font-bold text-hlblack sm:text-3xl">
                 Ready for your next appointment?
               </h2>
 
-              <p className="mx-auto mt-3 max-w-2xl text-black/70">
+              <p className="mx-auto mt-3 max-w-2xl text-sm text-black/70 sm:text-base">
                 Book in under a minute. If you have questions, reach us anytime.
               </p>
 
-              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <Link to="/book">
-                  <Button variant="primary" size="lg">
+              {/* ✅ Mobile-friendly CTA */}
+              <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:mt-8 sm:flex-row">
+                <Link to="/book" className="w-full max-w-sm sm:w-auto">
+                  <Button variant="primary" size="lg" className="w-full sm:w-auto">
                     Book Appointment
                   </Button>
                 </Link>
-                <Link to="/services">
-                  <Button variant="secondary" size="lg">
+                <Link to="/services" className="w-full max-w-sm sm:w-auto">
+                  <Button variant="secondary" size="lg" className="w-full sm:w-auto">
                     View Services
                   </Button>
                 </Link>
               </div>
 
-              <p className="mt-6 text-sm text-black/60">
+              {/* ✅ Prevent overflow on small screens */}
+              <p className="mt-6 break-words text-sm text-black/60">
                 Contact:{" "}
                 <span className="font-semibold text-hlblack">+389 70 000 000</span>{" "}
                 ·{" "}

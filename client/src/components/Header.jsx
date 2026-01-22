@@ -41,7 +41,9 @@ function DesktopNavItem({ to, label, icon: Icon, badge, dot }) {
         [
           "relative inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-hlgreen-300 focus-visible:ring-offset-2",
-          isActive ? "bg-cream-100 text-hlgreen-800" : "text-hlblack hover:bg-black/5 hover:text-hlgreen-700",
+          isActive
+            ? "bg-cream-100 text-hlgreen-800"
+            : "text-hlblack hover:bg-black/5 hover:text-hlgreen-700",
         ].join(" ")
       }
     >
@@ -140,9 +142,9 @@ export default function Header() {
   const hasUnread = unreadCount > 0;
   const badgeText = unreadCount > 99 ? "99+" : String(unreadCount);
 
-  // ✅ Consistent 80vw shell (same as Services/Book)
+  // ✅ Fluid container: full width on mobile, 80vw only on larger screens
   const containerClass =
-    "mx-auto w-full px-4 sm:px-6 md:w-[80vw] md:max-w-[80vw] md:min-w-[80vw]";
+    "mx-auto w-full max-w-screen-xl px-4 sm:px-6 lg:px-8";
 
   const authLinks = useMemo(() => {
     if (!user) {
@@ -168,14 +170,22 @@ export default function Header() {
         mobile: (
           <div className="grid gap-2 pt-2">
             <Link to="/login" onClick={() => setOpen(false)}>
-              <Button variant="soft" size="md" className="w-full rounded-2xl justify-center">
+              <Button
+                variant="soft"
+                size="md"
+                className="w-full rounded-2xl justify-center"
+              >
                 <span className="inline-flex items-center gap-2">
                   <LogIn className="h-5 w-5" /> Login
                 </span>
               </Button>
             </Link>
             <Link to="/register" onClick={() => setOpen(false)}>
-              <Button variant="primary" size="md" className="w-full rounded-2xl justify-center">
+              <Button
+                variant="primary"
+                size="md"
+                className="w-full rounded-2xl justify-center"
+              >
                 <span className="inline-flex items-center gap-2">
                   <UserPlus className="h-5 w-5" /> Register
                 </span>
@@ -199,7 +209,12 @@ export default function Header() {
             </Link>
           )}
 
-          <Button variant="soft" size="sm" className="rounded-xl" onClick={logout}>
+          <Button
+            variant="soft"
+            size="sm"
+            className="rounded-xl"
+            onClick={logout}
+          >
             <span className="inline-flex items-center gap-2">
               <LogOut className="h-4 w-4" /> Logout
             </span>
@@ -210,7 +225,11 @@ export default function Header() {
         <div className="grid gap-2 pt-2">
           {isAdmin && (
             <Link to="/admin" onClick={() => setOpen(false)}>
-              <Button variant="chip" size="md" className="w-full rounded-2xl justify-center">
+              <Button
+                variant="chip"
+                size="md"
+                className="w-full rounded-2xl justify-center"
+              >
                 <span className="inline-flex items-center gap-2">
                   <LayoutDashboard className="h-5 w-5" /> Dashboard
                 </span>
@@ -241,45 +260,44 @@ export default function Header() {
       {/* Top bar */}
       <div className={`${containerClass} flex items-center justify-between py-3`}>
         {/* Brand */}
-  
+        <Link to="/" className="inline-flex items-center gap-3 min-w-0">
+          <img
+            src={LOGO_SRC}
+            alt="HairLuxe"
+            className="h-10 w-10 sm:h-12 sm:w-12 object-contain flex-shrink-0"
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
 
-<Link to="/" className="inline-flex items-center gap-3">
-  {/* Bigger logo, no container, no border */}
-  <img
-    src={LOGO_SRC}
-    alt="HairLuxe"
-    className="h-14 w-14 object-contain"
-    loading="lazy"
-    onError={(e) => {
-      e.currentTarget.style.display = "none";
-    }}
-  />
+          <div className="leading-tight min-w-0">
+            <div className="flex items-baseline gap-1 min-w-0">
+              <span className="text-[22px] sm:text-[26px] font-semibold tracking-tight text-hlblack leading-none truncate">
+                Hair
+              </span>
+              <span className="text-[22px] sm:text-[26px] font-semibold tracking-tight text-hlgreen-600 leading-none">
+                Luxe
+              </span>
+            </div>
 
-  {/* Softer typography (not extra bold) */}
-  <div className="leading-tight">
-    <div className="flex items-baseline gap-1">
-      <span className="text-[28px] sm:text-[30px] font-semibold tracking-tight text-hlblack leading-none">
-        Hair
-      </span>
-      <span className="text-[28px] sm:text-[30px] font-semibold tracking-tight text-hlgreen-600 leading-none">
-        Luxe
-      </span>
-    </div>
+            <div className="mt-0.5 hidden sm:block text-[11px] font-medium text-black/50">
+              Book • Confirm • Glow
+            </div>
+          </div>
+        </Link>
 
-    <div className="mt-0.5 text-[11px] font-medium text-black/50">
-      Book • Confirm • Glow
-    </div>
-  </div>
-</Link>
-
-
-        {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-2">
+        {/* Desktop nav (now starts at lg, so hamburger appears earlier) */}
+        <nav className="hidden lg:flex items-center gap-2">
           {user ? (
             <>
               <DesktopNavItem to="/services" label="Services" icon={Scissors} />
               <DesktopNavItem to="/book" label="Book" icon={Sparkles} />
-              <DesktopNavItem to="/appointments" label="My Appointments" icon={CalendarCheck2} />
+              <DesktopNavItem
+                to="/appointments"
+                label="My Appointments"
+                icon={CalendarCheck2}
+              />
               <DesktopNavItem
                 to="/notifications"
                 label="Notifications"
@@ -293,8 +311,8 @@ export default function Header() {
           <div className="ml-2">{authLinks.desktop}</div>
         </nav>
 
-        {/* Mobile controls */}
-        <div className="flex items-center gap-2 md:hidden">
+        {/* Mobile controls (now visible until lg) */}
+        <div className="flex items-center gap-2 lg:hidden">
           {user ? (
             <Link
               to="/notifications"
@@ -312,25 +330,35 @@ export default function Header() {
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-3 text-sm font-extrabold text-hlblack shadow-sm"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-3 text-sm font-semibold text-hlblack shadow-sm"
             aria-label="Toggle menu"
             aria-expanded={open}
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            <span className="hidden xs:inline">{open ? "Close" : "Menu"}</span>
+            <span className="hidden sm:inline">{open ? "Close" : "Menu"}</span>
           </button>
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile / tablet menu (runs until lg) */}
       {open ? (
-        <div className="md:hidden border-t border-black/5 bg-white">
+        <div className="lg:hidden border-t border-black/5 bg-white">
           <div className={`${containerClass} py-4`}>
             {user ? (
               <>
                 <div className="grid gap-2">
-                  <MobileNavItem to="/services" label="Services" icon={Scissors} onClick={() => setOpen(false)} />
-                  <MobileNavItem to="/book" label="Book" icon={Sparkles} onClick={() => setOpen(false)} />
+                  <MobileNavItem
+                    to="/services"
+                    label="Services"
+                    icon={Scissors}
+                    onClick={() => setOpen(false)}
+                  />
+                  <MobileNavItem
+                    to="/book"
+                    label="Book"
+                    icon={Sparkles}
+                    onClick={() => setOpen(false)}
+                  />
                   <MobileNavItem
                     to="/appointments"
                     label="My Appointments"

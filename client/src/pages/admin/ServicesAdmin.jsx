@@ -10,7 +10,6 @@ import {
   Power,
   Search,
   Plus,
-  RefreshCw,
 } from "lucide-react";
 
 import api from "../../lib/api";
@@ -22,28 +21,10 @@ import Select from "../../components/Select";
 import { Card, CardBody } from "../../components/Card";
 import PageHeader from "../../components/PageHeader";
 
-const SPECIALTY_OPTIONS = [
-  { value: "Haircut", label: "Haircut" },
-  { value: "Coloring", label: "Coloring" },
-  { value: "Styling", label: "Styling" },
-  { value: "Treatment", label: "Treatment" },
-  { value: "Extensions", label: "Extensions" },
-  { value: "General", label: "General" },
-];
-
 function tonePill(active) {
   return active
     ? "bg-hlgreen-600/10 text-hlgreen-700 ring-1 ring-hlgreen-600/15"
     : "bg-black/5 text-black/60 ring-1 ring-black/10";
-}
-
-function specialtyBadge(label) {
-  const l = String(label || "General");
-  return (
-    <span className="inline-flex items-center rounded-full bg-cream-100 px-2 py-0.5 text-[11px] font-semibold text-black/70 ring-1 ring-black/5">
-      {l}
-    </span>
-  );
 }
 
 export default function AdminServices() {
@@ -60,7 +41,6 @@ export default function AdminServices() {
     description: "",
     price: "10",
     durationMinutes: "30",
-    specialty: "Haircut",
     active: "true",
   });
 
@@ -69,7 +49,6 @@ export default function AdminServices() {
     description: "",
     price: "10",
     durationMinutes: "30",
-    specialty: "Haircut",
     active: "true",
   });
 
@@ -82,14 +61,12 @@ export default function AdminServices() {
     load().catch(() => toast.error("Failed to load services"));
   }, [load]);
 
-
   const filtered = useMemo(() => {
     const qq = q.trim().toLowerCase();
     if (!qq) return services;
 
     return services.filter((s) => {
-      const specialty = s.specialty ?? s.category ?? "General";
-      return `${s.name} ${specialty}`.toLowerCase().includes(qq);
+      return `${s.name} ${s.description || ""}`.toLowerCase().includes(qq);
     });
   }, [services, q]);
 
@@ -101,15 +78,11 @@ export default function AdminServices() {
 
   function validateServicePayload(payload) {
     if (!payload.name) return toast.error("Name is required"), false;
-    if (!payload.specialty) return toast.error("Specialty is required"), false;
 
     if (!Number.isFinite(payload.price) || payload.price < 0)
       return toast.error("Price must be a valid number"), false;
 
-    if (
-      !Number.isFinite(payload.durationMinutes) ||
-      payload.durationMinutes < 15
-    )
+    if (!Number.isFinite(payload.durationMinutes) || payload.durationMinutes < 15)
       return toast.error("Duration must be at least 15 minutes"), false;
 
     return true;
@@ -121,7 +94,6 @@ export default function AdminServices() {
     const payload = {
       name: String(form.name || "").trim(),
       description: String(form.description || "").trim(),
-      specialty: String(form.specialty || "General").trim(),
       price: Number(form.price),
       durationMinutes: Number(form.durationMinutes),
       active: form.active === "true",
@@ -139,7 +111,6 @@ export default function AdminServices() {
         description: "",
         price: "10",
         durationMinutes: "30",
-        specialty: "Haircut",
         active: "true",
       });
 
@@ -177,14 +148,12 @@ export default function AdminServices() {
   }
 
   function startEdit(s) {
-    const specialty = s.specialty ?? s.category ?? "General";
     setEditingId(s._id);
     setEditForm({
       name: String(s.name ?? ""),
       description: String(s.description ?? ""),
       price: String(s.price ?? 0),
       durationMinutes: String(s.durationMinutes ?? 30),
-      specialty: String(specialty || "General"),
       active: String(!!s.active),
     });
   }
@@ -198,7 +167,6 @@ export default function AdminServices() {
     const payload = {
       name: String(editForm.name || "").trim(),
       description: String(editForm.description || "").trim(),
-      specialty: String(editForm.specialty || "General").trim(),
       price: Number(editForm.price),
       durationMinutes: Number(editForm.durationMinutes),
       active: editForm.active === "true",
@@ -230,7 +198,6 @@ export default function AdminServices() {
           className="w-full rounded-2xl border border-black/10 bg-white px-10 py-2.5 text-sm outline-none shadow-sm focus:ring-2 focus:ring-hlgreen-600/30"
         />
       </div>
-
     </div>
   );
 
@@ -260,11 +227,9 @@ export default function AdminServices() {
           <CardBody>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm font-semibold text-hlblack">
-                  Create service
-                </div>
+                <div className="text-sm font-semibold text-hlblack">Create service</div>
                 <div className="mt-1 text-xs text-black/60">
-                  Active services show up for booking and staff specialties.
+                  Active services show up for booking.
                 </div>
               </div>
 
@@ -281,22 +246,11 @@ export default function AdminServices() {
                 required
               />
 
-              <Select
-                label="Specialty"
-                value={form.specialty}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, specialty: e.target.value }))
-                }
-                options={SPECIALTY_OPTIONS}
-              />
-
               <InputField
                 label="Description"
                 hint="Optional"
                 value={form.description}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, description: e.target.value }))
-                }
+                onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
                 inputClassName="min-h-[44px]"
               />
 
@@ -349,7 +303,6 @@ export default function AdminServices() {
 
             <div className="mt-4 space-y-3 max-h-[620px] overflow-auto pr-1">
               {filtered.map((s) => {
-                const specialty = s.specialty ?? s.category ?? "General";
                 const isEditing = editingId === s._id;
 
                 return (
@@ -368,8 +321,6 @@ export default function AdminServices() {
                           <div className="truncate text-base font-semibold text-hlblack">
                             {s.name}
                           </div>
-
-                          {specialtyBadge(specialty)}
 
                           <span
                             className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${tonePill(
@@ -395,9 +346,7 @@ export default function AdminServices() {
                         </div>
 
                         {s.description ? (
-                          <div className="mt-2 text-sm text-black/70">
-                            {s.description}
-                          </div>
+                          <div className="mt-2 text-sm text-black/70">{s.description}</div>
                         ) : null}
                       </div>
 
@@ -475,15 +424,6 @@ export default function AdminServices() {
                               setEditForm((p) => ({ ...p, name: e.target.value }))
                             }
                             required
-                          />
-
-                          <Select
-                            label="Specialty"
-                            value={editForm.specialty}
-                            onChange={(e) =>
-                              setEditForm((p) => ({ ...p, specialty: e.target.value }))
-                            }
-                            options={SPECIALTY_OPTIONS}
                           />
 
                           <InputField
