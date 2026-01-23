@@ -9,7 +9,6 @@ import { notFound, errorHandler } from "./middleware/error.js";
 import authRoutes from "./routes/auth.routes.js";
 import serviceRoutes from "./routes/service.routes.js";
 import staffRoutes from "./routes/staff.routes.js";
-import settingsRoutes from "./routes/settings.routes.js";
 import availabilityRoutes from "./routes/availability.routes.js";
 import appointmentRoutes from "./routes/appointment.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
@@ -34,7 +33,6 @@ app.get("/api/health", (req, res) => res.json({ ok: true, name: "HairLuxe API" }
 app.use("/api/auth", authRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/staff", staffRoutes);
-app.use("/api/settings", settingsRoutes);
 app.use("/api/availability", availabilityRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/notifications", notificationRoutes);
