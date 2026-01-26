@@ -36,8 +36,6 @@ function statusLabel(status) {
   if (status === "PENDING_ADMIN_REVIEW") return "Pending";
   if (status === "DECLINED") return "Declined";
   if (status === "CANCELLED") return "Cancelled";
-  if (status === "COMPLETED") return "Completed";
-  if (status === "NO_SHOW") return "No show";
   return status || "Unknown";
 }
 
@@ -64,11 +62,9 @@ function Legend() {
   return (
     <div className="mt-4 flex flex-wrap gap-2">
       <StatusPill label="Working hours" dotClass="bg-emerald-100" />
-      <StatusPill label="Confirmed" dotClass="bg-emerald-600" />
       <StatusPill label="Pending" dotClass="bg-amber-300" />
       <StatusPill label="Proposed" dotClass="bg-sky-300" />
       <StatusPill label="Time off" dotClass="bg-black/20" />
-      <StatusPill label="No show" dotClass="bg-rose-300" />
     </div>
   );
 }
@@ -449,7 +445,7 @@ export default function AdminSchedule() {
       </Card>
 
       {/* Board */}
-      <Card className="mt-4 rounded-3xl border border-black/5 ovarflow-x-auto">
+      <Card className="mt-4 rounded-3xl border border-black/5 overflow-x-auto">
         <CardBody className="p-5">
           {loading ? (
             <div className="flex items-center justify-between">
@@ -570,18 +566,52 @@ export default function AdminSchedule() {
                               />
                             )}
 
-                            {/* time off */}
-                            {(s.timeOff || []).map((t, tIdx) => {
-                              const { left, width } = rangeToBar(t.startTime, t.endTime);
-                              return (
-                                <div
-                                  key={tIdx}
-                                  className="absolute top-3 bottom-3 rounded-2xl bg-black/15"
-                                  style={{ left, width }}
-                                  title={t.reason || "Time off"}
-                                />
-                              );
-                            })}
+                          {/* time off */}
+{(s.timeOff || []).map((t, tIdx) => {
+  const hasTimes =
+    typeof t?.startTime === "string" &&
+    typeof t?.endTime === "string" &&
+    /^\d{2}:\d{2}$/.test(t.startTime) &&
+    /^\d{2}:\d{2}$/.test(t.endTime) &&
+    hhmmToMin(t.endTime) > hhmmToMin(t.startTime);
+
+  // If time-off has no times (all day / date-based), show a strong full-band
+  const st = hasTimes
+    ? t.startTime
+    : s.workingHours?.startTime || minToHHMM(dayStartMin);
+
+  const en = hasTimes
+    ? t.endTime
+    : s.workingHours?.endTime || minToHHMM(dayEndMin);
+
+  const { left, width } = rangeToBar(st, en);
+
+  const label = t.reason || "Time off";
+  const showLabel = width >= 90;
+
+  return (
+    <div
+      key={t._id || tIdx}
+      className="absolute top-2 bottom-2 rounded-2xl border border-black/15 shadow-sm"
+      style={{
+        left,
+        width,
+        // striped pattern to be obvious, not just “some gray”
+        backgroundImage:
+          "repeating-linear-gradient(135deg, rgba(0,0,0,0.18) 0 10px, rgba(0,0,0,0.10) 10px 20px)",
+      }}
+      title={`${label}${hasTimes ? ` (${t.startTime}–${t.endTime})` : " (all day)"}`}
+    >
+      {showLabel ? (
+        <div className="flex h-full items-center justify-center px-2">
+          <span className="truncate rounded-full bg-white/70 px-2 py-1 text-[11px] font-semibold text-black/70 ring-1 ring-black/10">
+            {label}
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
+})}
 
                             {/* appointments */}
                             {(s.appointments || []).map((a) => {

@@ -73,7 +73,9 @@ function MobileNavItem({ to, label, icon: Icon, onClick, badge, dot }) {
         [
           "flex items-center justify-between rounded-2xl px-4 py-3 text-sm font-semibold transition",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-hlgreen-300 focus-visible:ring-offset-2",
-          isActive ? "bg-cream-100 text-hlgreen-800" : "text-hlblack hover:bg-black/5",
+          isActive
+            ? "bg-cream-100 text-hlgreen-800"
+            : "text-hlblack hover:bg-black/5",
         ].join(" ")
       }
     >
@@ -136,7 +138,8 @@ export default function Header() {
   useEffect(() => {
     const onUpdated = () => fetchUnread();
     window.addEventListener("notifications:updated", onUpdated);
-    return () => window.removeEventListener("notifications:updated", onUpdated);
+    return () =>
+      window.removeEventListener("notifications:updated", onUpdated);
   }, [fetchUnread]);
 
   const hasUnread = unreadCount > 0;
@@ -286,17 +289,24 @@ export default function Header() {
           </div>
         </Link>
 
-        {/* Desktop nav (now starts at lg, so hamburger appears earlier) */}
+        {/* Desktop nav */}
         <nav className="hidden lg:flex items-center gap-2">
           {user ? (
             <>
               <DesktopNavItem to="/services" label="Services" icon={Scissors} />
-              <DesktopNavItem to="/book" label="Book" icon={Sparkles} />
-              <DesktopNavItem
-                to="/appointments"
-                label="My Appointments"
-                icon={CalendarCheck2}
-              />
+
+              {/* ✅ Hide client-only links for admin */}
+              {!isAdmin ? (
+                <>
+                  <DesktopNavItem to="/book" label="Book" icon={Sparkles} />
+                  <DesktopNavItem
+                    to="/appointments"
+                    label="My Appointments"
+                    icon={CalendarCheck2}
+                  />
+                </>
+              ) : null}
+
               <DesktopNavItem
                 to="/notifications"
                 label="Notifications"
@@ -310,7 +320,7 @@ export default function Header() {
           <div className="ml-2">{authLinks.desktop}</div>
         </nav>
 
-        {/* Mobile controls (now visible until lg) */}
+        {/* Mobile controls */}
         <div className="flex items-center gap-2 lg:hidden">
           {user ? (
             <Link
@@ -339,7 +349,7 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile / tablet menu (runs until lg) */}
+      {/* Mobile / tablet menu */}
       {open ? (
         <div className="lg:hidden border-t border-black/5 bg-white">
           <div className={`${containerClass} py-4`}>
@@ -352,18 +362,25 @@ export default function Header() {
                     icon={Scissors}
                     onClick={() => setOpen(false)}
                   />
-                  <MobileNavItem
-                    to="/book"
-                    label="Book"
-                    icon={Sparkles}
-                    onClick={() => setOpen(false)}
-                  />
-                  <MobileNavItem
-                    to="/appointments"
-                    label="My Appointments"
-                    icon={CalendarCheck2}
-                    onClick={() => setOpen(false)}
-                  />
+
+                  {/* ✅ Hide client-only links for admin */}
+                  {!isAdmin ? (
+                    <>
+                      <MobileNavItem
+                        to="/book"
+                        label="Book"
+                        icon={Sparkles}
+                        onClick={() => setOpen(false)}
+                      />
+                      <MobileNavItem
+                        to="/appointments"
+                        label="My Appointments"
+                        icon={CalendarCheck2}
+                        onClick={() => setOpen(false)}
+                      />
+                    </>
+                  ) : null}
+
                   <MobileNavItem
                     to="/notifications"
                     label="Notifications"
