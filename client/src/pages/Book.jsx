@@ -10,14 +10,17 @@ import Select from "../components/Select";
 import InputField from "../components/InputField";
 
 function getStaffServiceIds(st) {
-  const raw =
-    st?.serviceIds ?? st?.services ?? st?.specialties ?? st?.service_ids ?? [];
-  if (Array.isArray(raw))
-    return raw
-      .map((x) => (typeof x === "string" ? x : x?._id))
-      .filter(Boolean);
-  return [];
+
+  const raw = st?.services ?? st?.specialties ?? [];
+
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map((x) => (typeof x === "string" ? x : x?._id))
+    .filter(Boolean)
+    .map(String);
 }
+
 
 /**
  * Local "YYYY-MM-DD" (NOT UTC) so min date matches user's real today.

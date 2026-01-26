@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import {
   Pencil,
@@ -21,6 +21,46 @@ import Select from "../../components/Select";
 import { Card, CardBody } from "../../components/Card";
 import PageHeader from "../../components/PageHeader";
 
+/**
+ * Staff <-> Service field compatibility:
+ * - New canonical field: staff.services
+ * - Old field: staff.specialties
+ * - UI may hold selected ids as strings
+ */
+function normalizeServiceIds(input) {
+  const list = Array.isArray(input) ? input : [];
+  return list
+    .map((x) => {
+      if (!x) return "";
+
+      if (typeof x === "string") return x;
+
+      if (typeof x === "object") {
+        return String(
+          x._id ||
+            x.id ||
+            x.serviceId ||
+            x.service?._id ||
+            x.service?.id ||
+            ""
+        );
+      }
+
+      return "";
+    })
+    .map((s) => String(s).trim())
+    .filter(Boolean);
+}
+
+function getStaffServiceRaw(st) {
+  // canonical first
+  return st?.services ?? st?.specialties ?? [];
+}
+
+function hasId24(x) {
+  return /^[0-9a-fA-F]{24}$/.test(String(x || ""));
+}
+
 export default function StaffAdmin() {
   const [staff, setStaff] = useState([]);
   const [services, setServices] = useState([]);
@@ -34,7 +74,7 @@ export default function StaffAdmin() {
   const [form, setForm] = useState({
     name: "",
     active: "true",
-    services: [],
+    services: [], // selected service ids
   });
 
   const [editingId, setEditingId] = useState(null);
@@ -43,10 +83,10 @@ export default function StaffAdmin() {
   const [editForm, setEditForm] = useState({
     name: "",
     active: "true",
-    services: [],
+    services: [], // selected service ids
   });
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const [stRes, sRes] = await Promise.all([
         api.get("/staff"),
@@ -57,15 +97,15 @@ export default function StaffAdmin() {
     } catch {
       toast.error("Failed to load staff/services");
     }
-  }
+  }, []);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   const serviceById = useMemo(() => {
     const map = new Map();
-    services.forEach((s) => map.set(String(s._id), s));
+    (services || []).forEach((s) => map.set(String(s._id), s));
     return map;
   }, [services]);
 
@@ -79,17 +119,21 @@ export default function StaffAdmin() {
   const filteredStaff = useMemo(() => {
     const qq = q.trim().toLowerCase();
     if (!qq) return staff;
-    return staff.filter((s) => String(s.name || "").toLowerCase().includes(qq));
+
+    return staff.filter((s) =>
+      String(s.name || "").toLowerCase().includes(qq)
+    );
   }, [staff, q]);
 
   const selectableServices = useMemo(
-    () => services.filter((s) => s.active !== false),
+    () => (services || []).filter((s) => s.active !== false),
     [services]
   );
 
   const filteredServices = useMemo(() => {
     const qq = svcQ.trim().toLowerCase();
     if (!qq) return selectableServices;
+
     return selectableServices.filter((s) =>
       `${s.name} ${s.description || ""}`.toLowerCase().includes(qq)
     );
@@ -98,6 +142,7 @@ export default function StaffAdmin() {
   const filteredEditServices = useMemo(() => {
     const qq = editSvcQ.trim().toLowerCase();
     if (!qq) return selectableServices;
+
     return selectableServices.filter((s) =>
       `${s.name} ${s.description || ""}`.toLowerCase().includes(qq)
     );
@@ -125,26 +170,16 @@ export default function StaffAdmin() {
     });
   };
 
-  function normalizeServiceIds(input) {
-    const list = Array.isArray(input) ? input : [];
-    return list
-      .map((x) =>
-        typeof x === "object" ? String(x?._id || "") : String(x || "")
-      )
-      .filter(Boolean);
-  }
-
   async function create(e) {
     e.preventDefault();
 
-    const serviceIds = normalizeServiceIds(form.services).filter((id) =>
-      /^[0-9a-fA-F]{24}$/.test(id)
-    );
+    const ids = normalizeServiceIds(form.services)
+      .filter(hasId24);
 
     const payload = {
       name: String(form.name || "").trim(),
       active: form.active === "true",
-      serviceIds,
+      services: ids, // ✅ canonical field
     };
 
     if (!payload.name) return toast.error("Name is required");
@@ -179,8 +214,9 @@ export default function StaffAdmin() {
     try {
       await api.put(`/staff/${s._id}`, { active: !s.active });
       await load();
-      if (editingId === String(s._id))
+      if (editingId === String(s._id)) {
         setEditForm((p) => ({ ...p, active: String(!s.active) }));
+      }
     } catch {
       toast.error("Failed");
     }
@@ -201,10 +237,19 @@ export default function StaffAdmin() {
   function startEdit(st) {
     setEditingId(String(st._id));
     setEditSvcQ("");
+
+    const raw = getStaffServiceRaw(st);
     setEditForm({
       name: String(st.name ?? ""),
       active: String(!!st.active),
-      services: normalizeServiceIds(st.serviceIds ?? st.services ?? st.specialties),
+      services: normalizeServiceIds(raw),
+    });
+
+    // Expand chips automatically when entering edit so you can see context
+    setExpandedStaff((prev) => {
+      const next = new Set(prev);
+      next.add(String(st._id));
+      return next;
     });
   }
 
@@ -215,14 +260,13 @@ export default function StaffAdmin() {
   }
 
   async function saveEdit(id) {
-    const serviceIds = normalizeServiceIds(editForm.services).filter((x) =>
-      /^[0-9a-fA-F]{24}$/.test(x)
-    );
+    const ids = normalizeServiceIds(editForm.services)
+      .filter(hasId24);
 
     const payload = {
       name: String(editForm.name || "").trim(),
       active: editForm.active === "true",
-      serviceIds,
+      services: ids, // ✅ canonical field
     };
 
     if (!payload.name) return toast.error("Name is required");
@@ -234,32 +278,48 @@ export default function StaffAdmin() {
       setEditingId(null);
       await load();
     } catch (e2) {
-      toast.error(e2?.response?.data?.message || "Failed to update");
+      const data = e2?.response?.data;
+      const msg =
+        data?.message ||
+        (Array.isArray(data?.issues)
+          ? data.issues.map((i) => i.message).join(", ")
+          : null) ||
+        (Array.isArray(data?.errors) ? data.errors.join(", ") : null) ||
+        e2?.message ||
+        "Failed to update";
+
+      console.log("UPDATE STAFF ERROR:", e2?.response?.status, data);
+      toast.error(msg);
     } finally {
       setSavingEdit(false);
     }
   }
 
   // chips: ids or populated objects
-  const staffServices = (st) => {
-    const raw = st.serviceIds ?? st.services ?? st.specialties ?? [];
-    const list = Array.isArray(raw) ? raw : [];
+  const staffServices = useCallback(
+    (st) => {
+      const raw = getStaffServiceRaw(st);
+      const list = Array.isArray(raw) ? raw : [];
 
-    return list
-      .map((x) => {
-        if (!x) return null;
+      return list
+        .map((x) => {
+          if (!x) return null;
 
-        if (typeof x === "object") {
-          if (!x.name) return null;
-          return { key: String(x._id || x.name), name: x.name };
-        }
+          // populated object
+          if (typeof x === "object") {
+            if (!x.name) return null;
+            return { key: String(x._id || x.name), name: x.name };
+          }
 
-        const svc = serviceById.get(String(x));
-        if (!svc) return null;
-        return { key: String(svc._id), name: svc.name };
-      })
-      .filter(Boolean);
-  };
+          // id
+          const svc = serviceById.get(String(x));
+          if (!svc) return null;
+          return { key: String(svc._id), name: svc.name };
+        })
+        .filter(Boolean);
+    },
+    [serviceById]
+  );
 
   const toggleExpandStaff = (id) => {
     setExpandedStaff((prev) => {
@@ -436,11 +496,13 @@ export default function StaffAdmin() {
                 {form.services.length ? (
                   <div className="mt-3">
                     <div className="text-xs text-black/60">Selected</div>
+
+                    {/* ✅ Responsive selected chips */}
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {form.services
                         .map((id) => serviceById.get(String(id)))
                         .filter(Boolean)
-                        .slice(0, 12)
+                        .slice(0, 16)
                         .map((svc) => (
                           <span
                             key={`sel-${svc._id}`}
@@ -451,9 +513,9 @@ export default function StaffAdmin() {
                           </span>
                         ))}
 
-                      {form.services.length > 12 ? (
+                      {form.services.length > 16 ? (
                         <span className="inline-flex items-center rounded-full border border-black/10 bg-white px-2 py-1 text-[11px] text-black/60">
-                          +{form.services.length - 12} more
+                          +{form.services.length - 16} more
                         </span>
                       ) : null}
                     </div>
@@ -506,8 +568,17 @@ export default function StaffAdmin() {
                 const isExpanded = expandedStaff.has(id);
                 const isEditing = editingId === id;
 
-                const visibleCount = isExpanded ? chips.length : 6;
-                const extra = Math.max(0, chips.length - visibleCount);
+                // ✅ More responsive chip visibility: fewer on small screens, more on large
+                const visibleCount = isExpanded ? chips.length : 0;
+                const baseVisible =
+                  typeof window !== "undefined" && window.innerWidth < 640
+                    ? 4
+                    : window.innerWidth < 1024
+                    ? 6
+                    : 10;
+
+                const shown = isExpanded ? chips : chips.slice(0, baseVisible);
+                const extra = Math.max(0, chips.length - shown.length);
 
                 return (
                   <div
@@ -541,14 +612,18 @@ export default function StaffAdmin() {
                             <span className="text-[11px] text-black/50">
                               • {chips.length} services
                             </span>
-                          ) : null}
+                          ) : (
+                            <span className="text-[11px] text-black/40">
+                              • no services
+                            </span>
+                          )}
                         </div>
 
                         {!isEditing ? (
                           <div className="mt-2">
                             {chips.length ? (
                               <div className="flex flex-wrap gap-1.5">
-                                {chips.slice(0, visibleCount).map((c) => (
+                                {shown.map((c) => (
                                   <span
                                     key={`${id}-${c.key}`}
                                     className="inline-flex items-center rounded-full border border-black/10 bg-white px-2 py-1 text-[11px] font-semibold text-black/70"
@@ -566,7 +641,7 @@ export default function StaffAdmin() {
                                   >
                                     +{extra} more
                                   </button>
-                                ) : chips.length > 6 ? (
+                                ) : chips.length > baseVisible ? (
                                   <button
                                     type="button"
                                     onClick={() => toggleExpandStaff(id)}
@@ -686,7 +761,7 @@ export default function StaffAdmin() {
                               </div>
                             </div>
 
-                            <div className="w-full sm:w-[220px]">
+                            <div className="w-full sm:w-[240px]">
                               <div className="relative">
                                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-black/40" />
                                 <input
@@ -699,40 +774,96 @@ export default function StaffAdmin() {
                             </div>
                           </div>
 
-                          <div className="mt-3 max-h-[260px] overflow-auto pr-1 space-y-2">
-                            {filteredEditServices.map((svc) => {
-                              const sid = String(svc._id);
-                              const checked = editForm.services.includes(sid);
+                          {/* ✅ Responsive: 2-column grid on large screens, list on mobile */}
+                          <div className="mt-3 max-h-[320px] overflow-auto pr-1">
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              {filteredEditServices.map((svc) => {
+                                const sid = String(svc._id);
+                                const checked = editForm.services.includes(sid);
 
-                              return (
-                                <label
-                                  key={`edit-${sid}`}
-                                  className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-black/10 bg-white px-3 py-2 hover:bg-cream-100 transition"
-                                >
-                                  <div className="min-w-0">
-                                    <div className="text-sm font-semibold text-hlblack truncate">
-                                      {svc.name}
+                                return (
+                                  <label
+                                    key={`edit-${sid}`}
+                                    className={[
+                                      "flex cursor-pointer items-center justify-between gap-3 rounded-2xl border px-3 py-2 transition",
+                                      checked
+                                        ? "border-hlgreen-600/20 bg-white ring-1 ring-hlgreen-600/10"
+                                        : "border-black/10 bg-white hover:bg-cream-100",
+                                    ].join(" ")}
+                                  >
+                                    <div className="min-w-0">
+                                      <div className="text-sm font-semibold text-hlblack truncate">
+                                        {svc.name}
+                                      </div>
+                                      <div className="text-xs text-black/60">
+                                        {svc.durationMinutes} min • {svc.price} €
+                                      </div>
                                     </div>
-                                    <div className="text-xs text-black/60">
-                                      {svc.durationMinutes} min • {svc.price} €
-                                    </div>
-                                  </div>
 
-                                  <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    onChange={() => toggleEditService(sid)}
-                                    className="h-4 w-4 accent-hlgreen-600"
-                                  />
-                                </label>
-                              );
-                            })}
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={() => toggleEditService(sid)}
+                                      className="h-4 w-4 accent-hlgreen-600"
+                                    />
+                                  </label>
+                                );
+                              })}
+                            </div>
 
                             {filteredEditServices.length === 0 ? (
-                              <div className="text-sm text-black/60">
+                              <div className="mt-2 text-sm text-black/60">
                                 No services found.
                               </div>
                             ) : null}
+                          </div>
+
+                          {/* ✅ Show selected chips in edit (more useful on mobile) */}
+                          <div className="mt-3">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="text-xs font-semibold text-black/50">
+                                Selected ({editForm.services.length})
+                              </div>
+                              {editForm.services.length ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setEditForm((p) => ({ ...p, services: [] }))
+                                  }
+                                  className="text-[11px] font-semibold text-black/60 hover:text-black"
+                                >
+                                  Clear
+                                </button>
+                              ) : null}
+                            </div>
+
+                            {editForm.services.length ? (
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {editForm.services
+                                  .map((id2) => serviceById.get(String(id2)))
+                                  .filter(Boolean)
+                                  .slice(0, 18)
+                                  .map((svc) => (
+                                    <span
+                                      key={`edit-sel-${svc._id}`}
+                                      className="inline-flex items-center rounded-full border border-black/10 bg-white px-2 py-1 text-[11px] font-semibold text-black/70"
+                                      title={svc.name}
+                                    >
+                                      {svc.name}
+                                    </span>
+                                  ))}
+
+                                {editForm.services.length > 18 ? (
+                                  <span className="inline-flex items-center rounded-full border border-black/10 bg-white px-2 py-1 text-[11px] text-black/60">
+                                    +{editForm.services.length - 18} more
+                                  </span>
+                                ) : null}
+                              </div>
+                            ) : (
+                              <div className="mt-2 text-xs text-black/50">
+                                No services selected yet.
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>

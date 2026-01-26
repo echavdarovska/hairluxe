@@ -46,16 +46,21 @@ export default function Services() {
     })();
   }, []);
 
-  const filtered = useMemo(() => {
-    const query = q.trim().toLowerCase();
-    if (!query) return services;
+ const filtered = useMemo(() => {
+  const query = q.trim().toLowerCase();
 
-    return services.filter((s) =>
-      `${s.name || ""} ${s.category || ""} ${s.description || ""}`
-        .toLowerCase()
-        .includes(query)
-    );
-  }, [services, q]);
+
+  const activeServices = (services || []).filter((s) => s.active !== false);
+
+  if (!query) return activeServices;
+
+  return activeServices.filter((s) =>
+    `${s.name || ""} ${s.category || ""} ${s.description || ""}`
+      .toLowerCase()
+      .includes(query)
+  );
+}, [services, q]);
+
 
   return (
     <div className="w-full flex justify-center">

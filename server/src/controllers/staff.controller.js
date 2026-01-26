@@ -1,13 +1,13 @@
 import { Staff } from "../models/Staff.js";
 import { staffCreateSchema } from "../validators/staff.validators.js";
 
-const STAFF_SPECIALTIES_SELECT =
+const STAFF_SERVICES_SELECT =
   "name category durationMinutes price active";
 
 export async function listStaff(req, res, next) {
   try {
     const staff = await Staff.find({})
-      .populate("specialties", STAFF_SPECIALTIES_SELECT)
+      .populate("services", STAFF_SERVICES_SELECT)
       .sort({ createdAt: -1 });
 
     res.json({ staff });
@@ -19,12 +19,15 @@ export async function listStaff(req, res, next) {
 export async function createStaff(req, res, next) {
   try {
     const data = staffCreateSchema.parse(req.body);
-    const created = await Staff.create(data);
 
-    const staff = await Staff.findById(created._id).populate(
-      "specialties",
-      STAFF_SPECIALTIES_SELECT
-    );
+    const created = await Staff.create({
+      name: data.name,
+      active: data.active ?? true,
+      services: data.services ?? [],
+    });
+
+    const staff = await Staff.findById(created._id)
+      .populate("services", STAFF_SERVICES_SELECT);
 
     res.status(201).json({ staff });
   } catch (e) {
@@ -36,10 +39,19 @@ export async function updateStaff(req, res, next) {
   try {
     const data = staffCreateSchema.partial().parse(req.body);
 
-    const staff = await Staff.findByIdAndUpdate(req.params.id, data, {
-      new: true,
-      runValidators: true, // IMPORTANT: enforce mongoose validation on updates too
-    }).populate("specialties", STAFF_SPECIALTIES_SELECT);
+    const update = {};
+    if (data.name !== undefined) update.name = data.name;
+    if (data.active !== undefined) update.active = data.active;
+    if (Array.isArray(data.services)) update.services = data.services;
+
+    const staff = await Staff.findByIdAndUpdate(
+      req.params.id,
+      update,
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).populate("services", STAFF_SERVICES_SELECT);
 
     if (!staff) {
       return res.status(404).json({ message: "Staff not found" });

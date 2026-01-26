@@ -4,28 +4,50 @@ import { StaffWorkingHours } from "../models/StaffWorkingHours.js";
 import { StaffTimeOff } from "../models/StaffTimeOff.js";
 
 function toDayOfWeekMon0(dateStr) {
-  const js = new Date(dateStr + "T00:00:00").getDay(); // JS: 0=Sun..6=Sat
+  const js = new Date(dateStr + "T00:00:00").getDay(); 
   return (js + 6) % 7; // App: 0=Mon..6=Sun
+}
+
+function isYMD(dateStr) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(dateStr || ""));
+}
+
+function parseIdList(csv) {
+  return String(csv || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 export async function getScheduleBoard(req, res) {
   try {
     const { date, staffIds } = req.query;
 
-    if (!date) return res.status(400).json({ error: "date is required (YYYY-MM-DD)" });
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
+    if (!date) {
+      return res.status(400).json({ error: "date is required (YYYY-MM-DD)" });
+    }
+    if (!isYMD(date)) {
       return res.status(400).json({ error: "date must be YYYY-MM-DD" });
     }
 
-    const staffIdList = String(staffIds || "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
+    const staffIdList = parseIdList(staffIds);
 
     const staffFilter = { active: true };
     if (staffIdList.length) staffFilter._id = { $in: staffIdList };
 
-    const staff = await Staff.find(staffFilter).select("name specialties active").lean();
+    // ✅ Transitional select: supports both old docs (specialties) and new (services)
+    // After migration, you can simplify to: .select("name services active")
+    const staffRaw = await Staff.find(staffFilter)
+      .select("name services specialties active")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const staff = (staffRaw || []).map((s) => ({
+      ...s,
+      // ✅ Normalize to services for consistent frontend contract
+      services: s.services ?? s.specialties ?? [],
+    }));
+
     const ids = staff.map((s) => s._id);
     const dayOfWeek = toDayOfWeekMon0(date);
 
@@ -36,7 +58,9 @@ export async function getScheduleBoard(req, res) {
       Appointment.find({
         staffId: { $in: ids },
         date,
-        status: { $in: ["PENDING_ADMIN_REVIEW", "CONFIRMED", "PROPOSED_TO_CLIENT"] },
+        status: {
+          $in: ["PENDING_ADMIN_REVIEW", "CONFIRMED", "PROPOSED_TO_CLIENT"],
+        },
       })
         .populate("serviceId", "name durationMinutes")
         .populate("clientId", "name email")
@@ -50,13 +74,13 @@ export async function getScheduleBoard(req, res) {
     ]);
 
     const hoursByStaff = new Map();
-    for (const h of hours) hoursByStaff.set(String(h.staffId), h);
+    for (const h of hours || []) hoursByStaff.set(String(h.staffId), h);
 
     const apptsByStaff = new Map(staff.map((s) => [String(s._id), []]));
-    for (const a of appts) apptsByStaff.get(String(a.staffId))?.push(a);
+    for (const a of appts || []) apptsByStaff.get(String(a.staffId))?.push(a);
 
     const timeOffByStaff = new Map(staff.map((s) => [String(s._id), []]));
-    for (const t of timeOff) timeOffByStaff.get(String(t.staffId))?.push(t);
+    for (const t of timeOff || []) timeOffByStaff.get(String(t.staffId))?.push(t);
 
     return res.json({
       date,
@@ -70,7 +94,7 @@ export async function getScheduleBoard(req, res) {
           timeOff: timeOffByStaff.get(String(s._id)) || [],
         };
       }),
-      pending, // Global pending queue for the day (used for review list)
+      pending, 
     });
   } catch (err) {
     console.error(err);
