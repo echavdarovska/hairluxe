@@ -400,8 +400,8 @@ export default function WorkingHoursStaff() {
         </Card>
       </div>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        {/* WEEKLY SCHEDULE */}
+      <div className="mt-6 grid gap-4 grid-cols-1">
+      
         <Card className="rounded-3xl border border-black/5">
           <CardBody className="p-6">
             <div className="flex items-center justify-between gap-3">

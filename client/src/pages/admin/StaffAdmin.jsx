@@ -21,12 +21,6 @@ import Select from "../../components/Select";
 import { Card, CardBody } from "../../components/Card";
 import PageHeader from "../../components/PageHeader";
 
-/**
- * Staff <-> Service field compatibility:
- * - New canonical field: staff.services
- * - Old field: staff.specialties
- * - UI may hold selected ids as strings
- */
 function normalizeServiceIds(input) {
   const list = Array.isArray(input) ? input : [];
   return list
@@ -74,7 +68,7 @@ export default function StaffAdmin() {
   const [form, setForm] = useState({
     name: "",
     active: "true",
-    services: [], // selected service ids
+    services: [], 
   });
 
   const [editingId, setEditingId] = useState(null);
@@ -83,7 +77,7 @@ export default function StaffAdmin() {
   const [editForm, setEditForm] = useState({
     name: "",
     active: "true",
-    services: [], // selected service ids
+    services: [], 
   });
 
   const load = useCallback(async () => {
@@ -179,7 +173,7 @@ export default function StaffAdmin() {
     const payload = {
       name: String(form.name || "").trim(),
       active: form.active === "true",
-      services: ids, // ✅ canonical field
+      services: ids, 
     };
 
     if (!payload.name) return toast.error("Name is required");
@@ -245,7 +239,7 @@ export default function StaffAdmin() {
       services: normalizeServiceIds(raw),
     });
 
-    // Expand chips automatically when entering edit so you can see context
+
     setExpandedStaff((prev) => {
       const next = new Set(prev);
       next.add(String(st._id));
@@ -266,7 +260,7 @@ export default function StaffAdmin() {
     const payload = {
       name: String(editForm.name || "").trim(),
       active: editForm.active === "true",
-      services: ids, // ✅ canonical field
+      services: ids, 
     };
 
     if (!payload.name) return toast.error("Name is required");
@@ -295,7 +289,7 @@ export default function StaffAdmin() {
     }
   }
 
-  // chips: ids or populated objects
+
   const staffServices = useCallback(
     (st) => {
       const raw = getStaffServiceRaw(st);
@@ -392,7 +386,7 @@ export default function StaffAdmin() {
         </Card>
       </div>
 
-      <div className="mt-6 grid gap-5 xl:grid-cols-[440px_1fr]">
+      <div className="mt-6 grid gap-5 xl:grid-cols-1">
         {/* CREATE STAFF */}
         <Card className="rounded-3xl">
           <CardBody>
