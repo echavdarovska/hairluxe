@@ -1,10 +1,10 @@
 import { Staff } from "../models/Staff.js";
 import { Appointment } from "../models/Appointment.js";
 import { StaffWorkingHours } from "../models/StaffWorkingHours.js";
-import { StaffTimeOff } from "../models/StaffTimeOff.js";
+import { TimeOff } from "../models/TimeOff.js";
 
 function toDayOfWeekMon0(dateStr) {
-  const js = new Date(dateStr + "T00:00:00").getDay(); 
+  const js = new Date(dateStr + "T00:00:00").getDay();
   return (js + 6) % 7; // App: 0=Mon..6=Sun
 }
 
@@ -44,7 +44,6 @@ export async function getScheduleBoard(req, res) {
 
     const staff = (staffRaw || []).map((s) => ({
       ...s,
-      // ✅ Normalize to services for consistent frontend contract
       services: s.services ?? s.specialties ?? [],
     }));
 
@@ -52,9 +51,18 @@ export async function getScheduleBoard(req, res) {
     const dayOfWeek = toDayOfWeekMon0(date);
 
     // Uses per-staff working hours (StaffWorkingHours) as the source of truth.
+    // TimeOff is range-based: startDate <= date <= endDate
     const [hours, timeOff, appts, pending] = await Promise.all([
       StaffWorkingHours.find({ staffId: { $in: ids }, dayOfWeek }).lean(),
-      StaffTimeOff.find({ staffId: { $in: ids }, date }).lean(),
+
+      TimeOff.find({
+        staffId: { $in: ids },
+        startDate: { $lte: date },
+        endDate: { $gte: date },
+      })
+        .sort({ startDate: -1, createdAt: -1 })
+        .lean(),
+
       Appointment.find({
         staffId: { $in: ids },
         date,
@@ -65,6 +73,7 @@ export async function getScheduleBoard(req, res) {
         .populate("serviceId", "name durationMinutes")
         .populate("clientId", "name email")
         .lean(),
+
       Appointment.find({ date, status: "PENDING_ADMIN_REVIEW" })
         .populate("serviceId", "name durationMinutes")
         .populate("clientId", "name email")
@@ -94,7 +103,7 @@ export async function getScheduleBoard(req, res) {
           timeOff: timeOffByStaff.get(String(s._id)) || [],
         };
       }),
-      pending, 
+      pending,
     });
   } catch (err) {
     console.error(err);

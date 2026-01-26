@@ -2,7 +2,7 @@ import { Service } from "../models/Service.js";
 import { Staff } from "../models/Staff.js";
 import { Appointment } from "../models/Appointment.js";
 import { StaffWorkingHours } from "../models/StaffWorkingHours.js";
-import { StaffTimeOff } from "../models/StaffTimeOff.js";
+import { TimeOff } from "../models/TimeOff.js";
 import { addMinutesToHhmm, compareHhmm, overlaps } from "../lib/time.js";
 
 const BLOCKING_STATUSES = ["CONFIRMED", "PENDING_ADMIN_REVIEW", "PROPOSED_TO_CLIENT"];
@@ -49,18 +49,24 @@ export async function getAvailability(req, res, next) {
     const staff = await Staff.findById(staffId);
     if (!staff || !staff.active) return res.status(404).json({ message: "Staff not found" });
 
-    // Uses per-staff working hours (StaffWorkingHours) instead of global settings hours.
+ 
     const dow = toDayOfWeekMon0(date);
     const wh = await StaffWorkingHours.findOne({ staffId, dayOfWeek: dow }).lean();
     if (!wh) return res.json({ slots: [] });
 
-    // Supports full-day off (no start/end) and partial blocks for the date.
-    const timeOffForDate = await StaffTimeOff.find({ staffId, date }).lean();
+
+    const timeOffForDate = await TimeOff.find({
+      staffId,
+      startDate: { $lte: date },
+      endDate: { $gte: date },
+    })
+      .sort({ startDate: -1, createdAt: -1 })
+      .lean();
+
     const fullDayOff = timeOffForDate.some((t) => !t.startTime || !t.endTime);
     if (fullDayOff) return res.json({ slots: [] });
 
-    // NOTE: slot step is still global unless you store slotLength per staff/service.
-    const slotLen = 30; // <-- align this with your actual slot length source if you store it elsewhere
+    const slotLen = 30; 
     const duration = service.durationMinutes;
 
     const blockingAppts = await Appointment.find({
@@ -92,6 +98,7 @@ export async function getAvailability(req, res, next) {
         overlaps(cur, end, a.startTime, a.endTime)
       );
 
+      // partial blocks only (full-day already returned above)
       const conflictsOff = timeOffForDate.some((t) =>
         overlaps(cur, end, t.startTime, t.endTime)
       );
