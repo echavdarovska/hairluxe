@@ -1,8 +1,7 @@
 import { Link } from "react-router-dom";
 
 export default function Footer() {
-  // Same strategy as Header:
-  // mobile = full width, md+ = exactly 80vw (matches admin shell)
+
   const containerClass =
     "mx-auto w-full px-6 md:w-[80vw] md:max-w-[80vw] md:min-w-[80vw]";
 

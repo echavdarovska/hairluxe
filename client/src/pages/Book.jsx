@@ -1,9 +1,7 @@
-// src/pages/Book.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import api from "../lib/api";
-
 import { Card } from "../components/Card";
 import Button from "../components/Button";
 import Select from "../components/Select";

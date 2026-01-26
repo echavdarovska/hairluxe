@@ -1,6 +1,6 @@
-import React from "react";
+
 import { Routes, Route } from "react-router-dom";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";

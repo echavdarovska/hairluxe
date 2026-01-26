@@ -9,8 +9,7 @@ const timeOffSchema = new mongoose.Schema(
       index: true,
     },
 
-    // Date range (inclusive)
-    // YYYY-MM-DD
+
     startDate: {
       type: String,
       required: true,
@@ -22,8 +21,7 @@ const timeOffSchema = new mongoose.Schema(
       index: true,
     },
 
-    // OPTIONAL time range (HH:mm)
-    // If null → full day off
+
     startTime: {
       type: String,
       default: null,

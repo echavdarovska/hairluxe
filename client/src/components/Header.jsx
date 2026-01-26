@@ -142,7 +142,6 @@ export default function Header() {
   const hasUnread = unreadCount > 0;
   const badgeText = unreadCount > 99 ? "99+" : String(unreadCount);
 
-  // ✅ Fluid container: full width on mobile, 80vw only on larger screens
   const containerClass =
     "mx-auto w-full max-w-screen-xl px-4 sm:px-6 lg:px-8";
 

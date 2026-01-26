@@ -1,12 +1,8 @@
 import  { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-
 import api from "../../lib/api";
 import AdminLayout from "../../components/AdminLayout";
 
-import Button from "../../components/Button";
-import InputField from "../../components/InputField";
-import { Card, CardBody } from "../../components/Card";
 
 const DOW = [
   

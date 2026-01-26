@@ -2,7 +2,6 @@ import { Notification } from "../models/Notification.js";
 
 export async function listNotifications(req, res, next) {
   try {
-    // Returns latest notifications for the logged-in user (capped to avoid unbounded lists)
     const items = await Notification.find({ userId: req.user._id })
       .sort({ createdAt: -1 })
       .limit(100)

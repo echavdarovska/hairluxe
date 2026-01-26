@@ -1,4 +1,3 @@
-// src/pages/Home.jsx
 import Button from "../components/Button";
 import { Link } from "react-router-dom";
 import { Sparkles, CalendarCheck2, Scissors } from "lucide-react";
@@ -190,7 +189,6 @@ export default function Home() {
                 Book in under a minute. If you have questions, reach us anytime.
               </p>
 
-              {/* ✅ Mobile-friendly CTA */}
               <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:mt-8 sm:flex-row">
                 <Link to="/book" className="w-full max-w-sm sm:w-auto">
                   <Button variant="primary" size="lg" className="w-full sm:w-auto">
@@ -204,7 +202,6 @@ export default function Home() {
                 </Link>
               </div>
 
-              {/* ✅ Prevent overflow on small screens */}
               <p className="mt-6 break-words text-sm text-black/60">
                 Contact:{" "}
                 <span className="font-semibold text-hlblack">+389 70 000 000</span>{" "}
