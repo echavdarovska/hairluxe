@@ -18,11 +18,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
 
   const [busy, setBusy] = useState(false);
-
-  // banner / server error
   const [error, setError] = useState(null);
-
-  // field-level errors
   const [fieldErrors, setFieldErrors] = useState({
     email: null,
     password: null,
@@ -48,10 +44,8 @@ export default function Login() {
     setBusy(true);
     setError(null);
 
-    // reset field errors each submit
     setFieldErrors({ email: null, password: null });
 
-    // ✅ validate locally first (fast feedback, fewer failed requests)
     const parsed = loginSchema.safeParse({ email, password });
 
     if (!parsed.success) {
@@ -67,7 +61,6 @@ export default function Login() {
       return;
     }
 
-    // ✅ use normalized values from schema (email lowercased)
     const { email: cleanEmail, password: cleanPassword } = parsed.data;
 
     try {
@@ -128,7 +121,6 @@ export default function Login() {
                       onChange={(e) => {
                         setEmail(e.target.value);
                         clearFieldError("email");
-                        // also clear banner error on interaction
                         if (error) setError(null);
                       }}
                       required

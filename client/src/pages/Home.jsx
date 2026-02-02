@@ -37,7 +37,6 @@ function FeatureCard({ icon: Icon, title, desc }) {
 }
 
 export default function Home() {
-  // ✅ Standard responsive shell: fluid on mobile, capped on desktop
   const containerClass = "mx-auto w-full max-w-screen-xl px-4 sm:px-6 lg:px-8";
 
   return (

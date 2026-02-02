@@ -7,7 +7,6 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [booting, setBooting] = useState(true);
 
-  // prevents stale responses from overwriting newer state
   const reqSeq = useRef(0);
 
   async function loadMe() {
@@ -24,7 +23,6 @@ export function AuthProvider({ children }) {
       if (mySeq === reqSeq.current) setUser(res.data.user);
       return res.data.user;
     } catch {
-      // only clear token if this request is still the latest one
       if (mySeq === reqSeq.current) {
         localStorage.removeItem("hl_token");
         setUser(null);
@@ -44,7 +42,6 @@ export function AuthProvider({ children }) {
 
     return () => {
       alive = false;
-      // invalidate any in-flight loadMe results
       reqSeq.current++;
     };
   }, []);
@@ -58,7 +55,6 @@ export function AuthProvider({ children }) {
       async login(email, password) {
         const res = await api.post("/auth/login", { email, password });
         localStorage.setItem("hl_token", res.data.token);
-        // invalidate any in-flight /me and set immediately
         reqSeq.current++;
         setUser(res.data.user);
         return res.data.user;

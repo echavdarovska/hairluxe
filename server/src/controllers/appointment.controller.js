@@ -37,7 +37,7 @@ async function ensureNoConflict(
   const q = {
     staffId,
     date,
-    status: { $in: BLOCKING_STATUSES }, // block pending/proposed too so slots don't double-book
+    status: { $in: BLOCKING_STATUSES },
   };
   if (ignoreAppointmentId) q._id = { $ne: ignoreAppointmentId };
 
@@ -56,7 +56,6 @@ export async function createAppointment(req, res, next) {
   try {
     const data = createAppointmentSchema.parse(req.body);
 
-    // Reject past date/time at the API boundary (UI checks are not enough).
     const today = todayLocalISO();
     if (!data.date || compareYMD(data.date, today) < 0) {
       const err = new Error("Cannot book past dates");
@@ -95,7 +94,6 @@ export async function createAppointment(req, res, next) {
 
     const endTime = addMinutesToHhmm(data.startTime, service.durationMinutes);
 
-    // Consistent conflict policy with availability: pending/proposed/confirmed block the slot.
     await ensureNoConflict({
       staffId: staff._id,
       date: data.date,

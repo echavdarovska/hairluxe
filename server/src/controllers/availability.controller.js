@@ -23,8 +23,8 @@ function timeToMinutes(t) {
   return h * 60 + m;
 }
 function toDayOfWeekMon0(dateStr) {
-  const js = new Date(dateStr + "T00:00:00").getDay(); // 0=Sun..6=Sat
-  return (js + 6) % 7; // 0=Mon..6=Sun
+  const js = new Date(dateStr + "T00:00:00").getDay(); 
+  return (js + 6) % 7; 
 }
 
 export async function getAvailability(req, res, next) {
@@ -98,7 +98,7 @@ export async function getAvailability(req, res, next) {
         overlaps(cur, end, a.startTime, a.endTime)
       );
 
-      // partial blocks only (full-day already returned above)
+
       const conflictsOff = timeOffForDate.some((t) =>
         overlaps(cur, end, t.startTime, t.endTime)
       );

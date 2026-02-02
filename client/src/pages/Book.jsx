@@ -19,10 +19,6 @@ function getStaffServiceIds(st) {
     .map(String);
 }
 
-
-/**
- * Local "YYYY-MM-DD" (NOT UTC) so min date matches user's real today.
- */
 function todayLocalISO() {
   const d = new Date();
   const yyyy = d.getFullYear();
@@ -32,7 +28,6 @@ function todayLocalISO() {
 }
 
 function compareYMD(a, b) {
-  // Works for YYYY-MM-DD strings
   return String(a).localeCompare(String(b));
 }
 
@@ -135,7 +130,6 @@ export default function Book() {
     })();
   }, []);
 
-  // ✅ Deep-link: preselect service from URL once services loaded (don’t override manual)
   useEffect(() => {
     if (!serviceFromUrl) return;
     if (!services.length) return;
@@ -157,7 +151,6 @@ export default function Book() {
       .filter((st) => getStaffServiceIds(st).includes(serviceId));
   }, [staff, serviceId]);
 
-  // resets on service change
   useEffect(() => {
     setStaffId("");
     setDate("");
@@ -165,14 +158,13 @@ export default function Book() {
     setSlots([]);
   }, [serviceId]);
 
-  // resets on staff change
+
   useEffect(() => {
     setDate("");
     setSlot("");
     setSlots([]);
   }, [staffId]);
 
-  // ✅ Guard: if someone types/pastes a past date, reject it
   useEffect(() => {
     if (!date) return;
     if (compareYMD(date, minDate) < 0) {
@@ -183,7 +175,6 @@ export default function Book() {
     }
   }, [date, minDate]);
 
-  // load slots
   useEffect(() => {
     async function loadSlots() {
       if (!serviceId || !staffId || !date) {
@@ -192,7 +183,6 @@ export default function Book() {
         return;
       }
 
-      // extra guard
       if (compareYMD(date, minDate) < 0) {
         setSlots([]);
         setSlot("");
@@ -206,7 +196,7 @@ export default function Book() {
         });
 
         const raw = res.data.slots || [];
-        // ✅ filter past times if booking for today
+   
         const filtered = raw.filter((s) => !isSlotInPast(date, s.startTime));
 
         setSlots(filtered);
@@ -226,7 +216,6 @@ export default function Book() {
       return;
     }
 
-    // ✅ Frontend hard-stop (backend must also validate)
     if (compareYMD(date, minDate) < 0) {
       toast.error("Cannot book past dates.");
       return;
@@ -265,7 +254,7 @@ export default function Book() {
   };
 
   return (
-    // ✅ SAME 80vw SHELL AS SERVICES/HOME
+
     <div className="w-full flex justify-center">
       <div className="w-full px-4 sm:px-6 lg:w-[80vw] lg:max-w-[80vw] lg:min-w-[80vw] pb-4">
         {/* Header */}

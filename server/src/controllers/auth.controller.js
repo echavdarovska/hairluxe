@@ -71,11 +71,11 @@ export async function login(req, res, next) {
 }
 
 export async function me(req, res) {
-  // Returns the user loaded by auth middleware (role-based UI can use req.user.role).
+
   res.json({ user: req.user });
 }
 
 export async function logout(req, res) {
-  // Stateless JWT: logging out means the client deletes the token.
+
   res.json({ ok: true });
 }

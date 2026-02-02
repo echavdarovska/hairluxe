@@ -53,7 +53,6 @@ export async function createTimeOff(req, res, next) {
     let endTime =
       endTimeRaw === null || endTimeRaw === "" ? null : String(endTimeRaw);
 
-    // Full-day off when no times are provided; partial-day off requires both times.
     if ((startTime && !endTime) || (!startTime && endTime)) {
       return res.status(400).json({
         message: "Provide both startTime and endTime, or neither for full-day off",
@@ -88,7 +87,6 @@ export async function deleteTimeOff(req, res, next) {
   try {
     const { staffId, timeOffId } = req.params;
 
-    // Scoped delete: prevents deleting someone else’s time-off by id.
     const deleted = await TimeOff.findOneAndDelete({ _id: timeOffId, staffId });
 
     if (!deleted) {

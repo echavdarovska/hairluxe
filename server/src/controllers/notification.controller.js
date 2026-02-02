@@ -15,7 +15,7 @@ export async function listNotifications(req, res, next) {
 
 export async function markRead(req, res, next) {
   try {
-    // Ensures users can only mark their own notifications as read
+   
     const n = await Notification.findOneAndUpdate(
       { _id: req.params.id, userId: req.user._id },
       { isRead: true },
@@ -34,7 +34,7 @@ export async function markRead(req, res, next) {
 
 export async function markAllRead(req, res, next) {
   try {
-    // Bulk update for UX performance (no per-item requests)
+  
     await Notification.updateMany(
       { userId: req.user._id, isRead: false },
       { isRead: true }

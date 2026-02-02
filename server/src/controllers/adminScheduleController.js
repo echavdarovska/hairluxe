@@ -35,8 +35,6 @@ export async function getScheduleBoard(req, res) {
     const staffFilter = { active: true };
     if (staffIdList.length) staffFilter._id = { $in: staffIdList };
 
-    // ✅ Transitional select: supports both old docs (specialties) and new (services)
-    // After migration, you can simplify to: .select("name services active")
     const staffRaw = await Staff.find(staffFilter)
       .select("name services specialties active")
       .sort({ createdAt: -1 })
@@ -50,8 +48,6 @@ export async function getScheduleBoard(req, res) {
     const ids = staff.map((s) => s._id);
     const dayOfWeek = toDayOfWeekMon0(date);
 
-    // Uses per-staff working hours (StaffWorkingHours) as the source of truth.
-    // TimeOff is range-based: startDate <= date <= endDate
     const [hours, timeOff, appts, pending] = await Promise.all([
       StaffWorkingHours.find({ staffId: { $in: ids }, dayOfWeek }).lean(),
 

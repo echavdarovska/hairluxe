@@ -63,7 +63,7 @@ export default function WorkingHoursStaff() {
   );
 
   const hoursSummary = useMemo(() => {
-    // days where THIS staff member works (rows present)
+  
     const workingDays = workingHours.length;
 
     const toMin = (t) => {
@@ -133,7 +133,7 @@ export default function WorkingHoursStaff() {
 
   useEffect(() => {
     loadStaff();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   useEffect(() => {
@@ -146,7 +146,6 @@ export default function WorkingHoursStaff() {
   }
 
   function isNotWorking(dayId) {
-    // For THIS staff member: if no row exists, they are not working that weekday.
     return !workingHours.some((x) => x.dayOfWeek === dayId);
   }
 
@@ -184,7 +183,6 @@ export default function WorkingHoursStaff() {
     try {
       setSavingHours(true);
 
-      // Only send days THIS staff member is working
       const normalized = [...workingHours]
         .map((r) => ({
           dayOfWeek: r.dayOfWeek,

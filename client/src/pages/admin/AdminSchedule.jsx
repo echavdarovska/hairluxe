@@ -14,7 +14,7 @@ import AdminLayout from "../../components/AdminLayout";
 import PageHeader from "../../components/PageHeader";
 import { Card, CardBody } from "../../components/Card";
 
-const MIN_PER_COL = 15; // 15-minute grid
+const MIN_PER_COL = 15;
 const STAFF_COL_PX = 220;
 
 function hhmmToMin(t) {
@@ -99,7 +99,7 @@ export default function AdminSchedule() {
 
     if (d) setDate(d);
     if (m) setViewMode(m === "filtered" ? "filtered" : "all");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+ 
   }, [location.search]);
 
   useEffect(() => {
@@ -130,12 +130,11 @@ export default function AdminSchedule() {
       const staff = res.data?.staff || [];
 
       setSelected((prev) => {
-        // if user already touched selection, keep it
+  
         if (Object.keys(prev).length) return prev;
 
         const next = {};
 
-        // If opened from request: mode=filtered & staff=id => select only that staff
         const p = new URLSearchParams(location.search);
         const staffParam = p.get("staff");
         const modeParam = p.get("mode");
@@ -145,7 +144,6 @@ export default function AdminSchedule() {
           return next;
         }
 
-        // Default: whole schedule (select all)
         staff.forEach((s) => (next[s._id] = true));
         return next;
       });
@@ -156,7 +154,7 @@ export default function AdminSchedule() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [date, viewMode]);
 
   const staffList = board?.staff || [];

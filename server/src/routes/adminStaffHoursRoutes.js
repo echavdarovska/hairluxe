@@ -13,11 +13,10 @@ import {
 
 const router = express.Router();
 
-// Working hours
+
 router.get("/staff/:staffId/working-hours", getStaffWorkingHours);
 router.put("/staff/:staffId/working-hours", putStaffWorkingHours);
 
-// Time off (leave/sick/day off)
 router.get("/staff/:staffId/time-off", listTimeOff);
 router.post("/staff/:staffId/time-off", createTimeOff);
 router.delete("/staff/:staffId/time-off/:timeOffId", deleteTimeOff);

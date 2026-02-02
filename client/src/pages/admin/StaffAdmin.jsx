@@ -47,7 +47,7 @@ function normalizeServiceIds(input) {
 }
 
 function getStaffServiceRaw(st) {
-  // canonical first
+
   return st?.services ?? st?.specialties ?? [];
 }
 
@@ -299,13 +299,11 @@ export default function StaffAdmin() {
         .map((x) => {
           if (!x) return null;
 
-          // populated object
           if (typeof x === "object") {
             if (!x.name) return null;
             return { key: String(x._id || x.name), name: x.name };
           }
 
-          // id
           const svc = serviceById.get(String(x));
           if (!svc) return null;
           return { key: String(svc._id), name: svc.name };
@@ -562,7 +560,6 @@ export default function StaffAdmin() {
                 const isExpanded = expandedStaff.has(id);
                 const isEditing = editingId === id;
 
-                // ✅ More responsive chip visibility: fewer on small screens, more on large
                 const visibleCount = isExpanded ? chips.length : 0;
                 const baseVisible =
                   typeof window !== "undefined" && window.innerWidth < 640

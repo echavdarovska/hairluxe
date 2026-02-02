@@ -3,7 +3,7 @@ import { serviceCreateSchema } from "../validators/service.validators.js";
 
 export async function listServices(req, res, next) {
   try {
-    // Services are global; ordering by creation date is enough
+ 
     const services = await Service.find({})
       .sort({ createdAt: -1 })
       .lean();

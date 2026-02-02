@@ -28,8 +28,7 @@ export function overlaps(aStart, aEnd, bStart, bEnd) {
 }
 
 export function dayOfWeekFromDate(dateStr) {
-  // dateStr: YYYY-MM-DD
-  // returns 0-6 (Sunday-Saturday)
+
   const d = new Date(dateStr + "T00:00:00");
   return d.getDay();
 }

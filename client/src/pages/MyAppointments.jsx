@@ -86,7 +86,7 @@ export default function MyAppointments() {
   }
 
   return (
-    // ✅ SAME 80vw SHELL AS SERVICES/HOME/BOOK
+
     <div className="w-full flex justify-center">
       <div className="w-full px-4 sm:px-6 lg:w-[80vw] lg:max-w-[80vw] lg:min-w-[80vw] pb-24">
         <PageHeader

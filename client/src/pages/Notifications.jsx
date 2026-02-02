@@ -17,7 +17,7 @@ function isUnread(n) {
   if (typeof isReadRaw === "number") return isReadRaw === 0;
   if (typeof isReadRaw === "string") return isReadRaw === "0" || isReadRaw.toLowerCase() === "false";
 
-  return true; // fallback: safer to show unread
+  return true; 
 }
 
 export default function Notifications() {
@@ -43,7 +43,7 @@ export default function Notifications() {
   async function markRead(id) {
     try {
       await api.patch(`/notifications/${id}/read`);
-      window.dispatchEvent(new Event("notifications:updated")); // ✅ refresh header dot/count
+      window.dispatchEvent(new Event("notifications:updated")); 
       await load();
     } catch (e) {
       toast.error("Failed to mark as read");
@@ -53,7 +53,7 @@ export default function Notifications() {
   async function markAll() {
     try {
       await api.patch("/notifications/read-all");
-      window.dispatchEvent(new Event("notifications:updated")); // ✅ refresh header dot/count
+      window.dispatchEvent(new Event("notifications:updated"));
       await load();
       toast.success("All notifications marked as read");
     } catch (e) {
@@ -62,7 +62,7 @@ export default function Notifications() {
   }
 
   return (
-    // ✅ SAME 80vw SHELL AS SERVICES/HOME/BOOK
+
     <div className="w-full flex justify-center">
       <div className="w-full px-4 sm:px-6 lg:w-[80vw] lg:max-w-[80vw] lg:min-w-[80vw] pb-24">
         <PageHeader

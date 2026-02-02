@@ -20,10 +20,7 @@ export default function Register() {
 
   const [busy, setBusy] = useState(false);
 
-  // server/banner error
   const [error, setError] = useState(null);
-
-  // field-level errors
   const [fieldErrors, setFieldErrors] = useState({
     name: null,
     email: null,
@@ -51,7 +48,6 @@ export default function Register() {
     setError(null);
     setFieldErrors({ name: null, email: null, password: null });
 
-    // ✅ validate locally first
     const parsed = registerSchema.safeParse({ name, email, password });
 
     if (!parsed.success) {
@@ -67,7 +63,6 @@ export default function Register() {
       return;
     }
 
-    // ✅ use normalized values (trimmed name, lowercased email)
     const { name: cleanName, email: cleanEmail, password: cleanPassword } =
       parsed.data;
 
@@ -76,7 +71,7 @@ export default function Register() {
       toast.success("Account created successfully");
       navigate("/");
     } catch (err) {
-      // Prefer structured server errors if you have them
+
       const msg = err?.response?.data?.message || "Register failed";
       setError(msg);
       toast.error(msg);

@@ -21,7 +21,6 @@ function categoryMeta(category = "") {
   return { label: category || "Hair", icon: Scissors, tone: "green" };
 }
 
-// light “design system” for category pills
 const PILL = {
   green: "bg-emerald-50 text-emerald-800 ring-emerald-200",
   amber: "bg-amber-50 text-amber-800 ring-amber-200",

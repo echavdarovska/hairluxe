@@ -103,7 +103,7 @@ export default function AdminAppointments() {
     })();
   }, []);
 
-  // ✅ Sync URL -> filters (this is what makes dashboard links work)
+
   useEffect(() => {
     setFilters((prev) => {
       const merged = {
@@ -111,7 +111,7 @@ export default function AdminAppointments() {
         ...urlFilters,
       };
 
-      // avoid pointless state updates
+ 
       const same =
         prev.status === merged.status &&
         prev.staffId === merged.staffId &&
@@ -120,10 +120,10 @@ export default function AdminAppointments() {
 
       return same ? prev : merged;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [urlFilters]);
 
-  // ✅ Whenever filters change, reload
+
   useEffect(() => {
     load();
   }, [filters, load]);

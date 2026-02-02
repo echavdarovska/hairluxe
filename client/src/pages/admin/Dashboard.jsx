@@ -188,7 +188,7 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout>
-      {/* ✅ Responsive header: actions stack on mobile, align on md+ */}
+
       <div className="rounded-3xl border border-black/5 bg-gradient-to-br from-cream-100 to-white p-5 sm:p-7">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0">
@@ -221,7 +221,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* ✅ KPI row: 1 col mobile, 2 col tablet, 3 col desktop */}
       <div className="mt-5 grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card className="rounded-3xl border border-black/5">
           <CardBody className="p-5 sm:p-6">
@@ -302,7 +301,6 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* ✅ Main grid: stack on mobile, 2 cols on lg */}
       <div className="mt-5 grid gap-3 sm:gap-4 lg:grid-cols-[1fr_380px]">
         {/* Today preview */}
         <Card className="rounded-3xl border border-black/5">
@@ -339,7 +337,6 @@ export default function AdminDashboard() {
                     className="flex flex-col gap-3 rounded-2xl border border-black/5 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="flex min-w-0 items-center gap-3">
-                      {/* ✅ Don’t rely on the first 2 chars; show full time on small screens */}
                       <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-cream-100 text-[11px] font-extrabold text-hlgreen-700 sm:text-sm">
                         {String(a.startTime || "—")}
                       </span>
@@ -388,7 +385,6 @@ export default function AdminDashboard() {
               </Link>
             </div>
 
-            {/* ✅ 1 col on very small, 3 cols on sm+ */}
             <div className="mt-5 grid gap-2 sm:grid-cols-3">
               <div className="rounded-2xl border border-black/5 bg-cream-100 p-3">
                 <div className="text-[11px] font-semibold text-black/60">
@@ -442,7 +438,7 @@ export default function AdminDashboard() {
                     key={row.key}
                     className="rounded-2xl border border-black/5 bg-white p-3"
                   >
-                    {/* ✅ Row header stacks on mobile */}
+                 
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">

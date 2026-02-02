@@ -28,7 +28,6 @@ export async function putStaffWorkingHours(req, res) {
     const { staffId } = req.params;
     const { workingHours } = req.body;
 
-    // Replace-all strategy: delete + insert keeps the dataset consistent.
     if (!Array.isArray(workingHours)) {
       return res.status(400).json({ error: "workingHours must be an array" });
     }
@@ -69,7 +68,7 @@ export async function putStaffWorkingHours(req, res) {
     );
 
     const saved = await StaffWorkingHours.find({ staffId }).sort({ dayOfWeek: 1 }).lean();
-    return res.json({ ok: true, workingHours: saved }); // returns normalized data
+    return res.json({ ok: true, workingHours: saved }); 
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: "Server error" });
